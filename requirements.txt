@@ -1,0 +1,82 @@
+# 訓練、錄影、切片、抽關鍵點用的環境。Python 3.11（作者用 3.11.15，macOS Apple Silicon）。
+#
+#   python3.11 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt          （Windows：.venv\Scripts\pip）
+#
+# 版本照作者電腦上實際跑通的環境固定。Intel Mac 裝不了（tensorflow 2.19.1 沒有 Intel Mac 版）；
+# Windows x64、Linux x86_64 有對應的安裝檔，但作者沒有實際跑過。
+# 轉檔（.keras → 網站格式）要另建一個環境，見 requirements-convert.txt：
+# mediapipe 0.10.21 要 numpy<2，轉檔器帶進來的 jax 要 numpy>=2，兩邊裝不進同一個環境。
+
+# ── 程式直接用到的 ──
+tensorflow==2.19.1
+keras==3.11.3
+numpy==1.26.4
+scipy==1.17.1
+scikit-learn==1.7.2
+# Python 端與網站端用的都是 MediaPipe 舊版 Holistic 介面（mp.solutions.holistic）；換版前先確認新版還有這個介面。
+mediapipe==0.10.21
+# mediapipe 會帶這個套件；不要另外裝 opencv-python，兩個同時存在會互相蓋掉 cv2。
+opencv-contrib-python==4.11.0.86
+# 只有錄影工具用到
+flask==2.3.2
+
+# ── 上面這些帶進來的相依（照作者環境固定版本）──
+absl-py==2.5.0
+astunparse==1.6.3
+attrs==26.1.0
+blinker==1.9.0
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.1
+click==8.1.8
+cloudpickle==3.1.2
+contourpy==1.3.3
+cycler==0.12.1
+flatbuffers==25.12.19
+fonttools==4.64.0
+gast==0.7.0
+google-pasta==0.2.0
+grpcio==1.83.1
+h5py==3.14.0
+idna==3.19
+itsdangerous==2.2.0
+jax==0.4.35
+jaxlib==0.4.35
+jinja2==3.1.6
+joblib==1.6.0
+kiwisolver==1.5.1
+libclang==18.1.1
+markdown==3.10.3
+markdown-it-py==4.2.0
+markupsafe==3.0.3
+matplotlib==3.11.1
+mdurl==0.1.2
+ml-dtypes==0.5.4
+namex==0.1.0
+opt-einsum==3.4.0
+optree==0.20.0
+packaging==26.3
+pillow==11.3.0
+protobuf==4.25.8
+pycparser==3.0
+pygments==2.21.0
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+requests==2.34.2
+rich==15.0.0
+sentencepiece==0.2.2
+setuptools==84.0.0
+six==1.17.0
+sounddevice==0.5.6
+tensorboard==2.19.0
+tensorboard-data-server==0.7.2
+# Windows 沒有 0.37.1，由 tensorflow 自己挑 Windows 版（0.31.0）
+tensorflow-io-gcs-filesystem==0.37.1; platform_system != "Windows"
+termcolor==3.3.0
+threadpoolctl==3.7.0
+typing-extensions==4.16.0
+urllib3==2.7.0
+werkzeug==3.1.8
+wheel==0.48.0
+wrapt==2.4.0

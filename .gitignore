@@ -1,0 +1,53 @@
+# 自己錄的影片、照片、切片預覽圖（會拍到人臉）、關鍵點與訓練產物都不要上傳。
+# 副檔名大小寫都擋：手機錄的常是 .MOV、.HEIC，而有些系統上的 git 會分大小寫。
+data/
+output/
+*.[mM][pP]4
+*.[mM][oO][vV]
+*.[mM]4[vV]
+*.[aA][vV][iI]
+*.[wW][eE][bB][mM]
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[hH][eE][iI][cC]
+*.csv
+*.npy
+*.npz
+*.pkl
+*.h5
+*.keras
+
+# 環境與暫存
+.venv*/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+
+# 網站自己的圖示與分享圖要放行（web/model/ 的檔本來就沒被擋）
+!web/og.png
+!web/apple-touch-icon.png
+
+# README 教人放在 web/ 底下的自錄素材：示範影片、骨架關鍵點、語音檔、詞彙頁都不要上傳
+web/videos/
+web/voices/
+web/guide-local.json
+web/w/
+*.[mM][pP]3
+*.[wW][aA][vV]
+*.[mM]4[aA]
+*.[gG][iI][fF]
+*.[wW][eE][bB][pP]
+*.[hH][eE][iI][fF]
+
+# 金鑰
+.env
+.env.*
+*.pem
+*.key
+*service-account*.json
+*credentials*.json

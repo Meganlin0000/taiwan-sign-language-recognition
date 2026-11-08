@@ -1,0 +1,1765 @@
+/* 台灣手語辨識 — 公開展示介面
+   ─────────────────────────────────────────────────────────
+   三個設計約束（作者訂的）：
+     一、立體感：用新擬物風格——同色系的表面，靠雙向陰影做出凸起與凹陷。
+     二、黑白：不用彩色。主要動作用純黑，其餘靠明暗與陰影分層。
+     三、整頁一屏：電腦上不用捲動就能看完。因此版面用 100dvh 撐滿，
+         鏡頭區吃掉剩餘空間，其餘元素固定高度。
+
+   新擬物有一個已知的無障礙問題：對比太低。這裡的處理是——
+   表面與陰影走柔和路線，但**所有文字與可點擊元件維持高對比**，
+   不讓風格犧牲可讀性。 */
+
+:root {
+  /* 拉丁字型排在中文前面：字型是逐字元挑選的，數字與英文由 San Francisco／
+     Segoe UI 畫，中文再穿透到後面的中文字型。這樣 tabular-nums 才會生效
+     （中文字型多半沒有這個特性），英數也不會被中文字型畫得又大又粗。
+     刻意不放 system-ui：簡體中文介面的 Windows 上它會解析成 Microsoft YaHei，
+     會蓋過 lang 屬性把整頁變成簡體字形。 */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "PingFang TC",
+    "Microsoft JhengHei UI", "Microsoft JhengHei", "微軟正黑體",
+    "Noto Sans TC", "Noto Sans CJK TC",
+    sans-serif;
+
+  color-scheme: light;
+
+  /* 參考圖的作法不是玻璃，是「純白實心容器 + 很散的柔和陰影」。
+     容器不透明、沒有邊框，靠陰影和明度差分層；
+     作用中的元素用純黑，其餘一律低調。 */
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --inset: #F4F4F4;      /* 容器內的凹槽／未作用的小方塊 */
+  --hi: #FFFFFF;
+  --lo: #CBCBCB;
+
+  /* 玻璃 */
+  /* 玻璃需要背後有東西才折射得出來，所以背景不能是純色。
+     底色刻意壓到中灰：玻璃是亮的，背景太亮就看不出它浮在上面。
+     全部是灰階，維持黑白。 */
+  --page-bg: none;   /* 平的淺灰。參考的是「白卡片放在平底上」，不再用漸層 */
+
+  /* 純白容器。陰影刻意很散（20px 以上的模糊、很低的不透明度）——
+     參考圖的柔軟感來自「大範圍淡陰影」，銳利的陰影會變成便宜的卡片感。 */
+  --glass-bg: #FFFFFF;
+  --glass-line: rgba(20,20,20,.08);   /* 極細邊線切出邊界，陰影就可以很輕 */
+  --glass-blur: none;
+  /* 上緣那道白線是整個效果的關鍵——沒有它就只是「模糊的半透明方塊」，
+     不會被讀成玻璃。下緣的微光是玻璃厚度，外陰影讓它浮起來。 */
+  --glass-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 1px 1px rgba(18,18,18,.05),
+    0 2px 4px rgba(18,18,18,.06),
+    0 5px 9px rgba(18,18,18,.045);
+  --glass-shadow-sm:
+    inset 0 1px 0 rgba(255,255,255,.85),
+    0 1px 1px rgba(18,18,18,.06),
+    0 2px 3px rgba(18,18,18,.06);
+  /* 黑色元素的陰影要更深一點，才看得出它是「壓在白色上面」的 */
+  --ink-shadow:
+    0 6px 14px rgba(18,18,18,.28),
+    0 2px 5px rgba(18,18,18,.18);
+
+  --text: #1A1A1A;
+  --muted: #5F5F5F;
+  --ink: #1C1C1C;         /* 作用中：墨色 */
+  --ink-on: #FFFFFF;
+  --warn: #8A5300;
+
+  /* 鏡頭與字幕永遠深色，不跟主題切換。
+     字幕類介面一律深底白字，這在聽障輔具上是驗證過的做法。 */
+  --stage-bg: #121212;
+  --caption-bg: rgba(14, 14, 14, .86);
+  --caption-line: rgba(255, 255, 255, .12);
+  --caption-text: #FFFFFF;
+  --caption-sub: #ADADAD;
+
+  --sidebar-track-width: clamp(360px, 27vw, 400px);
+  --sidebar-width: clamp(320px, 23vw, 340px);
+  --settings-row-height: 44px;
+  --settings-row-gap: 12px;
+  --r: 24px;
+  --r-sm: 16px;
+  --r-pill: 999px;
+
+  /* 玻璃珠：立體的鈕，坐在一條凹槽裡。
+     三個部分缺一不可——上緣的白色高光（光從上面來）、
+     由上往下微微變暗的漸層（珠子的厚度）、下方的外陰影（它浮起來）。
+     按下去時三個全部反過來：陰影收進內側、位置下沉一點點。 */
+  --bead: linear-gradient(180deg, #FFFFFF 0%, #F2F2F2 100%);
+  --bead-shadow:
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 0 -1px 0 rgba(20,20,20,.07),
+    0 1px 1px rgba(20,20,20,.11),
+    0 2px 3px rgba(20,20,20,.10),
+    0 5px 8px rgba(20,20,20,.07);
+  --bead-press:
+    inset 0 2px 5px rgba(20,20,20,.18),
+    inset 0 -1px 0 rgba(255,255,255,.55),
+    0 1px 1px rgba(20,20,20,.05);
+  /* 凹槽：珠子坐進去的那條溝 */
+  --track-bg: #E8E8E8;
+  --track-shadow:
+    inset 0 2px 3px rgba(20,20,20,.14),
+    inset 0 1px 1px rgba(20,20,20,.10),
+    inset 0 -1px 0 rgba(255,255,255,.95);
+  /* 墨色珠（主按鈕、按下狀態） */
+  --bead-ink: linear-gradient(180deg, #3B3B3B 0%, #1C1C1C 100%);
+  --bead-ink-shadow:
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 1px 2px rgba(18,18,18,.28),
+    0 3px 6px rgba(18,18,18,.22);
+  --bead-ink-press:
+    inset 0 3px 7px rgba(0,0,0,.55),
+    inset 0 -1px 0 rgba(255,255,255,.10);
+
+  /* 凸起／凹陷。距離刻意小——大陰影在密集版面上會糊成一片 */
+  --up: 5px 5px 10px var(--lo), -5px -5px 10px var(--hi);
+  --up-sm: 3px 3px 6px var(--lo), -3px -3px 6px var(--hi);
+  --in: inset 3px 3px 6px var(--lo), inset -3px -3px 6px var(--hi);
+
+  font-family: var(--font-sans);
+  font-size: 100%;   /* 不寫死 px，使用者自己調整的瀏覽器字級才有效 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #2D2D2D;         /* 中性偏暖的炭灰。原本 #2A2C2F 藍多於紅，整片會偏藍 */
+    --surface: #404040;    /* 按鈕與詞塊：比卡片再亮一階 */
+    --inset: #262626;      /* 凹槽比卡片暗一階 */   /* 凹槽。淺色是 #F2F2F4，深色沒定義的話會沿用它，整片刺眼 */
+    --hi: #4A4A4A;
+    --lo: #222222;
+    --text: #F2F2F2;
+    --muted: #A6A6A6;
+    --ink: #F2F2F2;
+    --ink-on: #232323;
+    --warn: #F0B860;
+    /* 深色版：光暈壓得很淡，底色是深灰。整體邏輯一樣——
+       背景要有結構，玻璃才有東西可以折射。 */
+    --page-bg: none;
+    /* 深色的玻璃：高光要壓很淡，不然會像塑膠貼紙 */
+    --glass-bg: #363636;   /* 實心卡片，比底亮一階 */
+    --glass-line: rgba(255,255,255,.075);
+    --glass-shadow:
+    inset 0 1px 0 rgba(255,255,255,.075),
+    inset 0 -1px 0 rgba(0,0,0,.30),
+    0 1px 2px rgba(0,0,0,.34),
+    0 4px 8px rgba(0,0,0,.24);
+    --glass-shadow-sm:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    inset 0 -1px 0 rgba(0,0,0,.26),
+    0 1px 2px rgba(0,0,0,.30);
+
+  /* 玻璃珠（深色）：光一樣從上面來，只是高光要壓很淡，不然像塑膠貼紙 */
+  --bead: linear-gradient(180deg, #4E4E4E 0%, #3A3A3A 100%);
+  --bead-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 1px 2px rgba(0,0,0,.45),
+    0 3px 6px rgba(0,0,0,.30);
+  --bead-press:
+    inset 0 2px 6px rgba(0,0,0,.55),
+    inset 0 -1px 0 rgba(255,255,255,.07),
+    0 1px 1px rgba(0,0,0,.25);
+  --track-bg: #232323;
+  --track-shadow:
+    inset 0 2px 4px rgba(0,0,0,.45),
+    inset 0 1px 1px rgba(0,0,0,.30),
+    inset 0 -1px 0 rgba(255,255,255,.07);
+  --bead-ink: linear-gradient(180deg, #FFFFFF 0%, #DCDCDC 100%);
+  --bead-ink-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 1px 2px rgba(0,0,0,.42),
+    0 3px 6px rgba(0,0,0,.28);
+  --bead-ink-press:
+    inset 0 3px 7px rgba(0,0,0,.30),
+    inset 0 -1px 0 rgba(255,255,255,.55);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #2D2D2D;         /* 中性偏暖的炭灰。原本 #2A2C2F 藍多於紅，整片會偏藍 */ --surface: #404040;    /* 按鈕與詞塊：比卡片再亮一階 */
+  --inset: #262626;      /* 凹槽比卡片暗一階 */   /* 凹槽。淺色是 #F2F2F4，深色沒定義的話會沿用它，整片刺眼 */ --hi: #4A4A4A; --lo: #222222;
+  --text: #F2F2F2; --muted: #A6A6A6; --ink: #F2F2F2; --ink-on: #232323;
+  --warn: #F0B860;
+  --page-bg: none;
+  --glass-bg: #363636;   /* 實心卡片，比底亮一階 */
+  --glass-line: rgba(255,255,255,.075);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255,255,255,.075),
+    inset 0 -1px 0 rgba(0,0,0,.30),
+    0 1px 2px rgba(0,0,0,.34),
+    0 4px 8px rgba(0,0,0,.24);
+  --glass-shadow-sm:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    inset 0 -1px 0 rgba(0,0,0,.26),
+    0 1px 2px rgba(0,0,0,.30);
+
+  /* 玻璃珠（深色）：光一樣從上面來，只是高光要壓很淡，不然像塑膠貼紙 */
+  --bead: linear-gradient(180deg, #4E4E4E 0%, #3A3A3A 100%);
+  --bead-shadow:
+    inset 0 1px 0 rgba(255,255,255,.15),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 1px 2px rgba(0,0,0,.45),
+    0 3px 6px rgba(0,0,0,.30);
+  --bead-press:
+    inset 0 2px 6px rgba(0,0,0,.55),
+    inset 0 -1px 0 rgba(255,255,255,.07),
+    0 1px 1px rgba(0,0,0,.25);
+  --track-bg: #232323;
+  --track-shadow:
+    inset 0 2px 4px rgba(0,0,0,.45),
+    inset 0 1px 1px rgba(0,0,0,.30),
+    inset 0 -1px 0 rgba(255,255,255,.07);
+  --bead-ink: linear-gradient(180deg, #FFFFFF 0%, #DCDCDC 100%);
+  --bead-ink-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    inset 0 -1px 0 rgba(0,0,0,.16),
+    0 1px 2px rgba(0,0,0,.42),
+    0 3px 6px rgba(0,0,0,.28);
+  --bead-ink-press:
+    inset 0 3px 7px rgba(0,0,0,.30),
+    inset 0 -1px 0 rgba(255,255,255,.55);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* 作者樣式裡的 display 會蓋過瀏覽器給 [hidden] 的 display:none。
+   .btn 是 inline-flex、.live-badge 是 flex，所以標了 hidden 還是會顯示出來。
+   這一條把它擋回去。 */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  /* 幾道很淡的灰階光暈。玻璃需要背後有東西才折射得出來——
+     背景若是純色，模糊完還是同一個顏色，效果等於零。
+     全部是灰階，維持黑白。 */
+  /* 底色要單獨寫一次。--page-bg 最後一層雖然是不透明的漸層，
+     但那是<圖層>不是 background-color：列印、強制色彩模式、
+     以及漸層還沒畫出來的第一瞬間，背景會是白的而字是淺色。 */
+  background-color: var(--bg);
+  background-image: var(--page-bg);
+  /* 尺寸要另外寫。把 "0 0 / 14px 14px" 塞進 --page-bg 裡是 background 簡寫的語法，
+     用 background-image 套的話整個值不合法，算出來會是 none（點紋整片不見）。 */
+  background-size: var(--page-bg-size, auto);
+  background-attachment: fixed;
+  color: var(--text);
+  font-size: 0.9375rem;      /* 15px：不大不小，長時間看不累 */
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;          /* 整頁一屏，不捲動 */
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ── 頂列 ─────────────────────────────────────────── */
+.topbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 10px 18px;
+  /* 跟下面的內容對齊。原本沒有寬度上限，大螢幕上標題會飄到最左、
+     按鈕飄到最右，跟 1240px 的內容區對不起來。 */
+  max-width: 1720px; margin: 0 auto; width: 100%;
+}
+/* 頂列的按鈕在觸控裝置上要有 44×44 的熱區（視覺大小不變）。 */
+@media (pointer: coarse) {
+  .icon-btn, .seg-btn { position: relative; }
+  .icon-btn::after, .seg-btn::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100%, 44px); height: max(100%, 44px);
+  }
+  .topbar-actions { gap: 10px; }
+  .seg {
+  border: 1px solid var(--glass-line); gap: 6px; }
+}
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); }
+.brand h1 { margin: 0; font-size: 1.0625rem; font-weight: 700; letter-spacing: .01em; }
+/* 標題旁的「AI 研究原型」：淡灰、細線隔開，只在電腦版（寬、而且不是矮的橫拿手機）顯示 */
+.brand-tag { display: none; font-size: .9375rem; color: var(--muted); padding-left: 10px; border-left: 1px solid var(--glass-line); line-height: 1.2; white-space: nowrap; }
+@media (min-width: 1101px) and (min-height: 501px) { .brand-tag { display: inline; } }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.seg {
+  border: 1px solid var(--glass-line);
+  display: flex; align-items: center; gap: 3px;
+  padding: 4px; border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--glass-shadow-sm);
+}
+.seg-label { font-size: .8125rem; color: var(--muted); padding: 0 8px 0 10px; }
+.seg-btn {
+  appearance: none; border: 0; cursor: pointer;
+  font: inherit; font-size: .8125rem; color: var(--muted);
+  padding: 6px 14px; border-radius: var(--r-pill);
+  background: transparent;
+}
+.seg-btn.is-on {
+  color: var(--ink-on); background: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), var(--ink-shadow);
+}
+.icon-btn {
+  border: 1px solid var(--glass-line);
+  appearance: none; cursor: pointer;
+  width: 38px; height: 38px; border-radius: var(--r-pill);
+  display: grid; place-items: center; color: var(--text);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow-sm);
+}
+.icon-btn:active { box-shadow: var(--in); }
+
+/* ── 版面 ─────────────────────────────────────────── */
+.layout {
+  flex: 1 1 auto; min-height: 0;
+  display: grid;
+  /* 左邊是畫面、右邊是操作（選詞、看示範／自己比、句子）。
+     右欄 320px：句子卡的兩顆按鈕與詞塊在這個寬度剛好不用擠。 */
+  /* 整頁寬度上限 1720（原本 1240，後來 1500）：4:3 的畫面在 1080 高的螢幕上需要約 1270 寬才能用滿高度，
+     上限太小會讓畫面被寬度卡住、上下各留一截空白（1920×1080 實測 1500 時下方空 144px）。
+     右欄寬度隨螢幕縮放（260～340），小一點的桌機才不會被右欄吃掉太多。 */
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-track-width);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "stage side";
+  gap: 14px;
+  padding: 0 18px 10px;
+  max-width: 1720px; width: 100%; margin: 0 auto;
+}
+.stage { grid-area: stage; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.side  {
+  grid-area: side; display: flex; flex-direction: column; gap: 12px; min-height: 0;
+  /* 側欄內容比欄位高時自己捲，不要把整頁撐開——整頁一屏顯示完是這個版面的前提。
+     捲軸<要顯示>：整頁是 overflow:hidden，所以頁面本身不能捲；
+     捲軸被藏起來的話，滑鼠使用者沒有任何線索知道下面還有東西。
+     （細捲軸，不搶畫面。鍵盤入口在 index.html 那邊用 tabindex 給。） */
+  overflow-y: auto; scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.side::-webkit-scrollbar { width: 6px; }
+.side::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 999px; }
+
+/* 框的容器：吃掉整個可用高度，並把自己設成尺寸容器（container-type: size），
+   這樣框可以用 cqh / cqw 拿到「可用的高與寬」，算出貼合畫面比例的尺寸——
+   不用估頂列與按鈕的高度、不用 JS、也不會有量了又改、改了又量的循環。
+   手機版（≤900px）不能這樣做：那裡的列高是 auto，尺寸容器會把自己塌成 0。 */
+.frame-box {
+  flex: 1 1 auto; min-height: 0;
+  container-type: size;
+  display: flex; align-items: center; justify-content: center;
+}
+/* 桌機：右欄要跟左邊的畫面一樣高。選詞卡用自己的高度，
+   「辨識出的句子」把剩下的高度吃掉（句子長了本來就需要那個空間）。
+   否則大螢幕上右下角整片是空的，兩欄對不齊。 */
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .layout { padding-bottom: var(--topbar-height, 64px); }
+  .viewport { transform: translateX(var(--frame-shift, 0px)); }
+  .side { transform: translate(calc(-1 * var(--sidebar-shift, 0px)), calc((var(--settings-row-height) + var(--settings-row-gap)) / 2)); }
+  .topbar-actions { transform: translate(calc(-1 * var(--sidebar-shift, 0px)), var(--settings-shift, 0px)); }
+  .side .sentence { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .side .sentence .strip { flex: 1 1 auto; max-height: none; min-height: 120px; }
+  .side .sentence .strip { align-content: flex-start; }   /* 詞塊靠上排，不要在高框裡垂直置中 */
+}
+
+/* ── 鏡頭 ─────────────────────────────────────────── */
+.viewport {
+  position: relative;
+  flex: 1 1 auto; min-height: 180px;
+  /* 框要跟畫面一樣寬，不要左右留黑邊。
+     原本框撐滿整欄（寬度由視窗決定、高度由剩餘空間決定），
+     4:3 的鏡頭或 16:9 的教學影片放進一個約 2:1 的框，contain 就一定留黑邊。
+     用 cover 填滿會裁掉上下——手語最不能裁的就是手。
+     所以反過來：框<不要> stretch，寬度由「高度 × 畫面比例」算出來、置中。
+     比例由 app.js 依當下顯示的那一層（鏡頭或教學影片）設定；還沒開鏡頭前用 4:3。
+     手機版另有規則（那邊高度不是定值，要用 max-width 算）。 */
+  aspect-ratio: 4 / 3;
+  /* 高度 = 可用高度與「可用寬度換算成的高度」取小；寬度由比例推出。
+     這就是 object-fit: contain 的行為，只是套在框上而不是影像上。
+     --cam-ar 與 aspect-ratio 都由 app.js 的 applyFrameRatio() 依顯示中的那一層設定。 */
+  flex: none;
+  height: min(100cqh, calc(100cqw / var(--cam-ar, 1.3333)));
+  width: auto; max-width: 100%;
+  background: var(--stage-bg);
+  /* 邊線與內側白線拿掉。影片／鏡頭填滿整個框之後，那兩條會變成畫面外圍一圈黑邊，
+     看起來像加了一個黑框。框的邊界靠圓角與外陰影表示就夠了。 */
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(18,18,18,.18), 0 4px 10px rgba(18,18,18,.14);
+}
+#camera, #overlay {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;          /* 4:3 的影像放進任意比例的框，留黑邊不變形 */
+}
+#camera {
+  transform: scaleX(-1);        /* 鏡像顯示：使用者看自己要像照鏡子 */
+}
+#overlay {
+  pointer-events: none;
+  /* 這裡<不要>加 scaleX(-1)。骨架的座標已經是鏡像過的了——
+     app.js 的 frameLoop 先把畫面翻轉才送進 MediaPipe（為了跟訓練資料同方向，
+     抽關鍵點.py 也是這樣做的），所以回來的 x 已經在鏡像後的座標系裡。
+     再用 CSS 翻一次等於翻兩次，骨架會跟影片左右相反：
+     舉右手，影片裡的手在右邊，骨架卻畫在左邊。
+     影片只翻一次（上面那條規則），所以兩者一致的作法是這一層不翻。 */
+  transform: none;
+}
+
+.stage-bar {
+  /* 要在教學示範層（z-index 2）之上，否則切到示範時分頁按鈕會被蓋掉 */
+  position: absolute; inset: 10px 10px auto 10px; z-index: 5;
+  display: flex; justify-content: space-between;
+  font-size: .75rem; color: var(--caption-sub);
+}
+.stage-bar .label { opacity: .75; }
+
+.placeholder {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; text-align: center; color: var(--caption-sub); padding: 20px;
+}
+.placeholder-title { margin: 0; font-size: 1.0625rem; font-weight: 700; color: var(--caption-text); }
+.placeholder-sub { margin: 0; font-size: .875rem; line-height: 1.65;
+  /* 放不下一行時折在逗號後面（「鏡頭跟臉一樣高，／上半身和雙手都入鏡」），不要拆開詞 */
+  word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
+
+/* ── 即時辨識 ─────────────────────────────────────── */
+.live-badge {
+  position: absolute; inset: auto 12px 12px 12px; z-index: 3;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 16px;
+  background: var(--caption-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--caption-line);
+  border-radius: var(--r-sm);
+  color: var(--caption-text);
+}
+.live-main { display: flex; align-items: baseline; gap: 12px; }
+.live-state {
+  font-size: .75rem; color: var(--caption-sub); white-space: nowrap;
+  padding: 3px 9px; border-radius: var(--r-pill); background: rgba(255,255,255,.08);
+  /* 空間不夠時先犧牲狀態標籤，不要犧牲辨識出的詞。
+     原本反過來：375px 的手機上「我們兩個」被截成「我們兩…」，
+     而旁邊那個最不重要的提示一個字都沒少。 */
+  flex: 0 10 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.live-badge strong {
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: 1.15; font-weight: 700; color: var(--caption-text);
+  /* 不可省略：flex 會把這一項壓到最小內容寬度，
+     而中文每個字都能當斷行點，「開心」會被折成兩行。 */
+  white-space: nowrap; flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis;
+  /* 只有最小的橫拿手機（568×320）會讓「比一個詞，比完手放下」折行：要折在逗號後面，不要拆成「比完手／放下」 */
+  word-break: keep-all;
+}
+.live-score {
+  font-size: .9375rem; color: var(--caption-sub);
+  font-variant-numeric: tabular-nums; flex: 0 0 auto;
+}
+.live-badge.is-stable { border-color: rgba(255,255,255,.4); }
+.live-badge.is-idle strong { color: var(--caption-sub); font-weight: 600; }
+
+/* 第二、三名。模型不確定時正確答案常常在這裡；
+   只顯示第一名會讓使用者以為系統壞了，列出候選才誠實。 */
+.live-alts { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+/* 空的時候保留一列高度，不要 display:none——候選出現／消失會讓卡片長高縮短，看起來就是在跳。 */
+.live-alts { min-height: 26px; }
+.live-alts:empty { visibility: hidden; }
+.live-alts li {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 4px 10px; border-radius: 7px;
+  background: rgba(255,255,255,.07);
+  font-size: .8125rem; color: var(--caption-sub);
+}
+/* 長條用背景層畫，文字永遠壓在上面不會被推開 */
+.live-alts li::before {
+  content: ""; position: absolute; inset: 0 auto 0 0;
+  width: var(--bar, 0%); background: rgba(255,255,255,.14);
+}
+.live-alts .alt-word, .live-alts .alt-score { position: relative; }
+.live-alts .alt-word { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-alts .alt-score { font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+
+/* ── 按鈕 ─────────────────────────────────────────── */
+/* 「關閉鏡頭」：在兩顆模式鈕下面，整列寬、安靜。收尾動作不該跟主動作一樣搶眼。 */
+.mode-stop { margin-top: 8px; width: 100%; }
+.btn {
+  appearance: none; border: 1px solid var(--glass-line); cursor: pointer; font: inherit; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 20px; border-radius: var(--r-pill); min-height: 44px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--glass-shadow-sm);
+  transition: box-shadow .14s ease, transform .12s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(24,24,30,.14); }
+.btn:disabled { opacity: .42; cursor: not-allowed; transform: none; }
+/* 主要按鈕是實心黑，但保留上緣高光——那道白線是玻璃的識別特徵，
+   純黑沒有它會顯得扁平，跟旁邊的玻璃元件對不起來。 */
+/* 作用中：純黑。上緣一道很淡的內高光，讓它看起來微微隆起——
+   參考圖裡黑色按鈕的立體感就是這樣來的，不是靠邊框。 */
+.btn-primary {
+  border-color: transparent;
+  flex: 1 1 auto;
+  background: var(--ink);
+  color: var(--ink-on);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), var(--ink-shadow);
+}
+.btn-primary:active { filter: brightness(1.2); }
+.btn.full { width: 100%; }
+.btn-sm { padding: 7px 14px; min-height: 36px; font-size: .8125rem; }
+/* 「清除」會刪掉整句。它不該跟「全部唸出」長得一樣吸引人。
+   （刪掉之後可以按「復原」，所以不用再加一層確認對話框。） */
+.btn-quiet { color: var(--muted); box-shadow: none; background: transparent; }
+.btn-quiet:hover { background: var(--surface); box-shadow: var(--glass-shadow-sm); }
+
+/* 鏡頭下方不顯示任何狀態文字；錯誤只出現在畫面內。 */
+.status { position: absolute; z-index: 7; top: 38px; left: 14px; right: 14px; margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--caption-bg); color: var(--caption-text); font-size: .875rem; line-height: 1.5; max-height: calc(100% - 54px); overflow-y: auto; }
+.status.is-error { color: var(--caption-text); font-weight: 600; }
+.status:empty { display: none; }
+
+/* ── 側欄卡片 ─────────────────────────────────────── */
+.card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r);
+  padding: 13px 14px;
+  box-shadow: var(--glass-shadow);
+}
+.card h2 { margin: 0 0 11px; font-size: .9375rem; font-weight: 700; }
+.field-label { display: block; font-size: .875rem; color: var(--muted); margin-bottom: 7px; }
+
+select {
+  appearance: none; width: 100%; font: inherit; font-size: .875rem;
+  color: var(--text); background: var(--inset);
+  border: 0; border-radius: var(--r-sm); padding: 11px 34px 11px 14px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%235F5F5F' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center;
+}
+.fine { font-size: .8125rem; line-height: 1.7; color: var(--muted); }
+/* 「看示範／我要比比看」兩顆並排。按下去的那個變成墨色，表示畫面現在是它。 */
+.mode { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.mode.is-single { grid-template-columns: 1fr; }
+.mode .btn { padding-inline: 8px; }
+.mode .btn.is-on, .mode .btn.is-on:hover {
+  border-color: transparent;
+  background: var(--ink); color: var(--ink-on);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), var(--ink-shadow);
+}
+.guide-video { width: 100%; border-radius: var(--r-sm); background: var(--stage-bg); display: block; margin-bottom: 8px; }
+.hint { margin: 9px 0 0; font-size: .875rem; line-height: 1.7; color: var(--muted); }
+
+/* 準確率。原本右欄大半空白，放實測數字既填版面，
+   也讓第一次打開的人立刻知道這個東西的能力邊界。 */
+/* 換人的數字擺最上面、字最大。那是這個東西實際上能不能用的答案。
+   全部單色——不用顏色暗示「這個比較差」，那會引導讀者看別的數字。 */
+
+/* 側欄的「哪些詞好認」。側欄只有 208px 寬，所以標籤放上面、詞排下面，
+   不要左右分欄——分欄會把詞擠成一欄兩個字。 */
+
+/* ── 句子 ─────────────────────────────────────────── */
+.sentence {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-line);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  box-shadow: var(--glass-shadow);
+}
+.sentence-head {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 8px; margin-bottom: 10px;
+}
+.sentence-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* 右欄只有 320px（橫放手機更窄），兩顆並排的按鈕左右內距收一點，「全部唸出」才不會折成兩行 */
+.sentence-actions .btn { padding-inline: 8px; white-space: nowrap; }
+.sentence-head h2 { margin: 0; font-size: .9375rem; font-weight: 700; }
+.sentence-head { margin-bottom: 8px; }
+.switch { display: inline-flex; align-items: center; gap: 7px; font-size: .8125rem; color: var(--muted); cursor: pointer; }
+.switch input { width: 17px; height: 17px; accent-color: var(--ink); cursor: pointer; }
+
+.strip {
+  min-height: 50px; border-radius: var(--r-sm);
+  padding: 10px 12px;
+  /* 凹槽要明顯比卡片暗。原本兩者同明度，整塊糊成一片灰。
+     深色模式下 --inset 與詞卡的 --surface 是同一個色碼，凹槽感整片消失，
+     所以這裡另外加一道內陰影把層次做出來——不依賴兩個顏色剛好不同。 */
+  background: var(--inset);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.18);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  overflow-y: auto; max-height: 84px;
+}
+.strip-empty { margin: 0; color: var(--muted); font-size: .9375rem; }
+/* 鏡頭框下面那一行「只認得 25 個詞…」。小、安靜，但一直在。 */
+.stage-hint { margin: 0; text-align: center; }
+.chip {
+  border: 1px solid var(--glass-line);
+  appearance: none; cursor: pointer; font: inherit;
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 1.125rem; font-weight: 700; color: var(--text);
+  padding: 5px 6px 5px 14px; border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--glass-shadow-sm);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.chip:hover { transform: translateY(-1px); }
+.chip.is-playing {
+  background: var(--ink); color: var(--ink-on);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), var(--ink-shadow);
+}
+/* 詞本身是一顆按鈕（按了再唸一次）。清掉瀏覽器預設的按鈕外觀，
+   讓它看起來還是詞卡裡的字，但鍵盤 Tab 得到、報讀器說得出來。 */
+.chip-word {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  font: inherit; color: inherit; padding: 0 3px; margin-left: -3px;
+  border-radius: 6px;          /* 鍵盤聚焦時的外框才不會是個直角方塊 */
+}
+/* 每個詞自己的刪除鈕。原本只有「清除全部」，
+   比錯一個詞就得整句重來——那在示範的時候很難看。 */
+.chip-x {
+  appearance: none; border: 0; cursor: pointer; font: inherit;
+  width: 22px; height: 22px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-size: .8125rem; line-height: 1; color: var(--muted);
+  background: var(--inset);
+}
+/* 刪除鈕的 hover 直接填滿紅底白字。
+   原本是淡紅底 + 深紅字（#8E1F18），深色模式下底色被卡片的深灰壓掉，
+   對比只剩 1.67:1（門檻 4.5:1）——想按刪除的時候那個 × 剛好看不見。
+   填滿之後白字對 #B2261E 是 6.6:1，兩個模式、播放中的詞卡都成立。 */
+.chip-x:hover, .chip-x:focus-visible { background: #B2261E; color: #FFF; }
+/* 觸控裝置上把刪除鈕的可點範圍撐到 44×44（視覺大小不變）。
+   原本只有 22×22，而旁邊 20px 就是「再聽一次」的文字，手機上很容易按錯：
+   想刪掉一個詞，結果它唸給你聽。 */
+.chip-x { position: relative; }
+@media (pointer: coarse) {
+  .chip { min-height: 44px; }
+  .chip-x { width: 28px; height: 28px; }
+  .chip-x::before {
+    /* 往上下與右邊長，<不要>往左長進詞裡：原本四邊都 -8px，
+       於是點「起床」的右緣會直接把它刪掉。示範途中誤刪一個已辨識的詞，
+       比按了沒反應更難看。 */
+    content: ''; position: absolute; inset: -8px -6px -8px 0; border-radius: 999px;
+  }
+}
+.chip.is-playing .chip-x { background: rgba(255,255,255,.18); color: rgba(255,255,255,.85); }
+
+/* ── 頁尾 ─────────────────────────────────────────── */
+.foot { flex: 0 0 auto; padding: 0 22px 10px; max-width: 1720px; width: 100%; margin: 0 auto; }
+.panel summary {
+  cursor: pointer; font-size: .8125rem; color: var(--muted);
+  list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 13px; border-radius: var(--r-pill);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow-sm);
+}
+.panel summary::-webkit-details-marker { display: none; }
+.panel summary::before { content: "？"; font-weight: 700; }
+/* 展開時浮起來蓋在內容上，不把版面推長——整頁一屏的前提不能破 */
+.panel[open] { position: relative; }
+.panel[open] .panel-body {
+  position: absolute; bottom: 38px; left: 0; right: 0; z-index: 20;
+  max-height: 62vh; overflow-y: auto;
+  background: var(--glass-bg);
+  border-radius: var(--r);
+  padding: 16px 18px; box-shadow: var(--glass-shadow);
+  font-size: .8125rem; line-height: 1.7; color: var(--muted);
+}
+.panel-body p { margin: 0 0 9px; }
+.panel-body p:last-child { margin-bottom: 0; }
+.panel-body strong { color: var(--text); }
+.credit { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--lo); }
+a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+
+.noscript { padding: 20px; text-align: center; color: var(--warn); }
+
+/* ── 鍵盤焦點 ─────────────────────────────────────── */
+/* 不要在這裡寫 border-radius——它會蓋掉元件自己的圓角，
+   鍵盤聚焦時膠囊鈕與圓形鈕會突然變成方角。outline 本來就會沿著元件的圓角走。 */
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ── 窄螢幕：放棄一屏，改成正常捲動 ──────────────── */
+@media (max-width: 900px), (max-width: 1100px) and (orientation: portrait) {
+  body { height: auto; min-height: 100dvh; overflow: auto; }
+
+  /* 手機上辨識卡片原本是絕對定位壓在鏡頭畫面下半部，蓋掉約一半的預覽——
+     手比低一點就看不到自己，而那正是使用者最需要看到的時候。
+     改成排在鏡頭框下面自成一列。候選清單也收起來，卡片才維持一列高。 */
+  /* 卡片留在鏡頭框底部（絕對定位），但候選詞改成單行之後只剩約一列高，
+     在直式手機的 3:4 框裡只蓋到最下面約兩成，手比低一點仍看得到自己。
+     （先前試過 position: static，結果它跑到框的最上面跟「未開啟」標籤疊在一起——
+      因為框裡的影片與畫布都是絕對定位，卡片是唯一在正常流裡的東西。） */
+  .live-badge { padding: 8px 12px; gap: 6px; }
+  /* 候選詞在手機上不藏，改成單行橫排：
+     模型每次推論本來就有前幾名，看到「你 / 老師」並列，使用者立刻懂兩個手勢很像——
+     這是這一次、這個人、這個動作的真實情況，比任何預存的準確率數字有用，也不會過期。
+     單行、可橫向捲動，卡片不會長高、不會再蓋到鏡頭。 */
+  .live-alts {
+    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 6px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .live-alts::-webkit-scrollbar { display: none; }
+  .live-alts li { flex: 0 0 auto; padding: 3px 10px 3px 8px; }
+  .live-alts li::before { display: none; }
+  .live-alts .alt-word { max-width: 8em; }
+  /* 鏡頭框的長寬比由 syncDimensions() 依實際串流設定（iOS 直式是 3:4），
+     這裡只限制高度，橫放時才不會把整個螢幕吃掉。 */
+  /* 鏡頭框的高度上限。原本 60svh 太高：加上頂列、按鈕與提示之後，
+     「辨識出的句子」會被推到第一屏之外——而那正是使用者要看的結果。
+     42svh 之下，iPhone 直式（812~932pt）第一屏就同時看得到鏡頭與句子。
+     橫放時 svh 很小，改用 vmin 當第二道上限，免得鏡頭縮成一條細線。 */
+  .viewport {
+    max-height: min(42svh, 56vmin);
+    /* 框的寬度收到跟串流一樣的比例，左右就不會各留一片黑。
+       --cam-ar 由 app.js 的 syncDimensions() 依實際串流設定（iOS 直式是 3:4）。 */
+    max-width: calc(min(42svh, 56vmin) * var(--cam-ar, 1.3333));
+    /* width: 100% 不能省。這是直排 flex 的項目，一旦加了 margin-inline: auto
+       就不再 stretch，寬度會變成「跟著內容算」——而框裡的影片與畫布都是
+       絕對定位，內容寬度等於 0，於是整個框連同 aspect-ratio 一起塌成 2px。 */
+    width: 100%; margin-inline: auto;
+  }
+  /* 句子區原本卡在 84px，比到第 4 個詞就看不到最新的。 */
+  .strip { max-height: 132px; }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    /* 手機：畫面在上，選詞與兩顆按鈕緊接在下面，句子再下面（都在 .side 裡） */
+    grid-template-areas: "stage" "side";
+    padding: 0 14px 20px; gap: 12px;
+    /* 手機的 .layout 會被撐到整個視窗高（body min-height:100dvh、flex:1），
+       而格線的列預設 align-content: stretch 會把多出來的高度平分給兩列——
+       結果畫面下面、選詞卡上面憑空多出幾十像素的空白。列靠上排就好。 */
+    align-content: start;
+  }
+  .frame-box { container-type: normal; display: block; flex: 0 0 auto; }
+  .viewport { aspect-ratio: 4 / 3; min-height: 0; height: auto; }
+  /* 375px 寬時標題與「女聲／男聲」會各自被擠成兩行，很難看也難按。
+     標題縮一級、語音切換的字不換行、間距收緊，一行就放得下。 */
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .brand h1 { font-size: .9375rem; white-space: nowrap; }
+  .topbar-actions { gap: 6px; }
+  .seg {
+  border: 1px solid var(--glass-line); gap: 2px; padding: 3px; }
+  .seg-label { display: none; }          /* 「語音」兩個字在手機上是多的，按鈕本身已經寫了女聲／男聲 */
+  .seg-btn { padding: 6px 10px; white-space: nowrap; }
+  .foot { padding: 0 14px 22px; }
+  .btn-primary {
+  border-color: transparent; min-height: 50px; }
+  .panel[open] .panel-body { position: static; max-height: none; margin-top: 10px; }
+}
+/* 橫放時高度是稀缺資源、寬度有剩。維持單欄的話鏡頭會縮成一條細線，
+   而「辨識出的句子」同樣掉到折線外——轉橫是使用者覺得能救場的動作，
+   在這裡反而更糟。改成兩欄，把剩下的寬度用掉。 */
+@media (max-width: 900px) and (orientation: landscape) {
+  body { height: 100dvh; overflow: hidden; }
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 34%);
+    /* 句子在上、用自己的高度；側欄拿剩下的並自己捲。
+       反過來寫（側欄 auto）的話，側欄三張卡加起來遠高於橫放的 390px，
+       1fr 那一列就會被壓成 0，句子整塊塌掉疊在側欄上面。 */
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "stage side";
+    gap: 10px;
+  }
+  .side { overflow-y: auto; }
+  .viewport {
+    max-height: none; height: auto;
+    /* 橫放時框會被拉到整欄寬（約 529px），但影像只有 4:3——
+       人只佔中間三分之一，左右各一大片黑。把框的寬度收回「這個高度該有的寬度」。
+       減去的 205px 是頂列、按鈕、狀態列與間距的總和（量出來的）；
+       估太小只是鏡頭略小一點，估太大才會留黑邊，所以刻意往小的方向估。 */
+    max-width: calc((100svh - 205px) * var(--cam-ar, 1.3333));
+    width: 100%; margin-inline: auto;
+  }
+  .strip { max-height: 72px; }
+}
+
+@media (max-width: 560px) {
+  .seg-label { display: none; }
+  .sentence-head { flex-direction: column; align-items: stretch; }
+  .sentence-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .sentence-actions .switch { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+
+/* ── 分頁：看示範 / 我要比比看 ─────────────────────
+   兩者是先後發生的，共用同一塊大畫面。教學影片放在側欄只有 208px 寬，
+   看不清楚手形——而手形正是學手語唯一要看清楚的東西。 */
+
+/* ── 教學示範層 ───────────────────────────────── */
+.guide-layer { position: absolute; inset: 0; z-index: 2; background: var(--stage-bg); }
+#guide-video, #guide-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain;
+  /* 這裡<不翻轉>。教學影片的檔案本身就是鏡像的（跟鏡頭畫面同方向，
+     使用者照著比像照鏡子），骨架也是從那個檔案抽的——
+     影片、骨架、Finder 裡點開看到的，全部是同一個方向，沒有隱藏的翻轉。
+     舊做法是檔案不鏡像、播放時 scaleX(-1)，結果骨架被翻了兩次而跟影片相反。 */
+}
+#guide-canvas { pointer-events: none; }
+.guide-tools {
+  position: absolute; inset: auto 12px 12px auto; z-index: 3;
+  display: flex; gap: 7px;
+}
+.pill {
+  appearance: none; border: 1px solid var(--caption-line); cursor: pointer;
+  font: inherit; font-size: .75rem; color: var(--caption-sub);
+  padding: 5px 12px; border-radius: var(--r-pill);
+  background: var(--caption-bg); backdrop-filter: blur(10px);
+}
+.pill[aria-pressed="true"] { color: #161616; background: #FFFFFF; border-color: transparent; font-weight: 600; }
+.guide-empty {
+  position: absolute; inset: 0; z-index: 3; margin: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--caption-sub); font-size: .9375rem;
+}
+
+
+/* 實心按鈕（主要動作、已選的音色）在深色主題要翻過來：
+   漸層寫死成深色、文字卻用會跟著主題翻轉的變數，
+   在深色模式下會變成深底深字，整顆按鈕消失。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-primary,
+  :root:not([data-theme="light"]) .seg-btn.is-on {
+    /* 只留文字色。底與陰影交給「玻璃珠」那組規則（--bead-ink 在深色下本來就是淺色的），
+       在這裡寫死會把立體感蓋掉、又變回一塊平的色板。 */
+    color: var(--ink-on);
+  }
+}
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .seg-btn.is-on {
+  color: var(--ink-on);
+}
+
+
+/* 深色模式：白色的元件要跟著變深，否則會是一塊發光的板子。
+   --inset 與 --surface 在深色下已經重新定義，這裡處理寫死成白色的部分。 */
+@media (prefers-color-scheme: dark) {
+  /* × 的顏色在深色下不能用 --muted：疊在 12% 白的底上只有 3.97:1（門檻 4.5）。
+     膠囊本身交給「玻璃珠」那組規則（--bead／--bead-ink 在深色下都有自己的值），這裡不再寫死平色。 */
+  :root:not([data-theme="light"]) .chip-x { background: rgba(255,255,255,.12); color: #D0D0D0; }
+  :root:not([data-theme="light"]) .chip.is-playing .chip-x { background: rgba(0,0,0,.10); color: #3A3A3A; }
+}
+:root[data-theme="dark"] .chip-x { background: rgba(255,255,255,.12); color: #D0D0D0; }
+:root[data-theme="dark"] .chip.is-playing .chip-x { background: rgba(0,0,0,.10); color: #3A3A3A; }
+
+
+/* 「關於」改成由右上角的 ⓘ 開啟的浮層。
+   原本是頁尾一顆浮著的膠囊，在一屏版面裡很搶眼而且沒必要常駐。
+   裡面的教材來源標示與開源授權是引用義務，不能整個刪掉，只能換位置。 */
+.sheet {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  padding: 24px;
+  background: rgba(18,18,18,.42);
+  backdrop-filter: blur(3px);
+}
+.sheet-card {
+  border: 1px solid var(--glass-line);
+  width: min(560px, 100%); max-height: 78vh;
+  display: flex; flex-direction: column;
+  background: var(--surface); border-radius: var(--r);
+  box-shadow: 0 24px 60px rgba(18,18,18,.34), 0 6px 16px rgba(18,18,18,.18);
+}
+.sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 16px 16px 10px;
+}
+.sheet-head h2 { margin: 0; font-size: 1rem; font-weight: 700; }
+.sheet-body {
+  overflow-y: auto; padding: 0 18px 18px;
+  font-size: .875rem; line-height: 1.75; color: var(--muted);
+}
+.sheet-body p { margin: 0 0 10px; }
+.sheet-body p:last-child { margin-bottom: 0; }
+.sheet-body strong { color: var(--text); }
+
+
+/* ── 互動回饋 ───────────────────────────────────────
+   按鈕：懸停微微浮起、按下去縮一點並把陰影收掉（真的有「按到」的感覺）、
+   按下的瞬間從中心暈開一圈（純 CSS，不用 JS）。
+   詞塊：辨識到一個詞的時候彈進來，不是憑空出現。
+   減少動態（prefers-reduced-motion）時上面那條 * { animation:none } 會把這些全部關掉。 */
+.btn, .icon-btn, .seg-btn, .chip, .chip-x, select {
+  transition: transform .12s ease, box-shadow .16s ease, background-color .16s ease,
+              color .16s ease, border-color .16s ease, filter .12s ease;
+}
+.btn { position: relative; overflow: hidden; }
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(18,18,18,.08); }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.985); box-shadow: 0 1px 2px rgba(18,18,18,.08); transition-duration: .06s; }
+.btn-primary:hover:not(:disabled), .mode .btn.is-on:hover { box-shadow: 0 2px 5px rgba(18,18,18,.22); }
+.btn-primary:active:not(:disabled), .mode .btn.is-on:active { filter: brightness(1.15); box-shadow: 0 1px 3px rgba(18,18,18,.25); }
+/* 按下時從中心暈開的一圈 */
+.btn::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(circle at center, rgba(20,20,20,.14), transparent 62%);
+  opacity: 0; transform: scale(.6); transition: opacity .35s ease, transform .35s ease;
+}
+.btn:active::after { opacity: 1; transform: scale(1.6); transition: none; }
+.btn-primary::after, .mode .btn.is-on::after { background: radial-gradient(circle at center, rgba(255,255,255,.22), transparent 62%); }
+.btn:disabled { transform: none; }
+
+.icon-btn:hover { transform: translateY(-1px); }
+.icon-btn:active { transform: scale(.94); }
+.seg-btn:active { transform: scale(.96); }
+.chip-x:active { transform: scale(.88); }
+select:hover { filter: brightness(.985); }
+select:active { transform: scale(.995); }
+
+/* 辨識到的詞彈進句子裡 */
+@keyframes chip-pop {
+  from { transform: translateY(6px) scale(.85); opacity: 0; }
+  60%  { transform: translateY(-1px) scale(1.03); opacity: 1; }
+  to   { transform: none; opacity: 1; }
+}
+.chip { animation: chip-pop .22s cubic-bezier(.2,.8,.3,1.1) both; }
+.chip:active { transform: scale(.97); }
+
+/* 「已辨識」那一下：卡片邊框亮一下再退回去 */
+@keyframes badge-flash { from { box-shadow: 0 0 0 0 rgba(255,255,255,.55); } to { box-shadow: 0 0 0 10px rgba(255,255,255,0); } }
+.live-badge.is-stable { animation: badge-flash .5s ease-out; }
+
+
+/* ── 玻璃珠 ─────────────────────────────────────────
+   所有可以按的東西都是「坐在凹槽裡的立體珠子」。
+   按下去 = 珠子沉進凹槽：外陰影收掉、換成內陰影、整顆往下 1px。
+   淺色深色共用同一組規則，差別只在上面那幾個變數。 */
+.btn, .icon-btn, .chip {
+  background: var(--bead);
+  box-shadow: var(--bead-shadow);
+  border-color: transparent;
+}
+.btn:hover:not(:disabled), .icon-btn:hover, .chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bead-shadow), 0 6px 10px rgba(20,20,20,.10);
+}
+.btn:active:not(:disabled), .icon-btn:active, .chip:active, .seg-btn:active {
+  transform: translateY(1px) scale(.99);
+  box-shadow: var(--bead-press);
+  transition-duration: .06s;
+}
+/* 墨色珠：主按鈕與「按下中」的模式鈕 */
+.btn-primary, .mode .btn.is-on, .mode .btn.is-on:hover, .chip.is-playing, .seg-btn.is-on {
+  background: var(--bead-ink);
+  box-shadow: var(--bead-ink-shadow);
+}
+.btn-primary:hover:not(:disabled), .mode .btn.is-on:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--bead-ink-shadow), 0 6px 12px rgba(18,18,18,.20);
+}
+.btn-primary:active:not(:disabled), .mode .btn.is-on:active, .chip.is-playing:active, .seg-btn.is-on:active {
+  transform: translateY(1px) scale(.99);
+  box-shadow: var(--bead-ink-press);
+  filter: none;
+}
+/* 凹槽：兩顆模式鈕與語音切換各坐在一條溝裡 */
+.mode, .seg, .sentence-actions {
+  background: var(--track-bg);
+  box-shadow: var(--track-shadow);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 5px;
+  gap: 5px;
+}
+.sentence-actions { border-radius: var(--r-pill); }
+/* 安靜的按鈕（清除、復原）不做成珠子——它們不是主動作 */
+.btn-quiet, .btn-quiet:hover { background: none; box-shadow: none; transform: none; }
+.btn-quiet:active { transform: translateY(1px); box-shadow: var(--bead-press); background: var(--track-bg); }
+
+/* 「關閉鏡頭」是隱私控制——鏡頭燈還亮著的時候，它必須找得到。
+   原本跟「清除」共用最安靜的樣式，結果在深色下幾乎看不見。
+   改成有外框、文字用正常色：看得見，但沒有實心底，所以還是不會搶「暫停」的戲。 */
+.mode-stop {
+  margin-top: 10px;
+  color: var(--text);
+  background: none;
+  border: 1px solid var(--muted);
+  box-shadow: none;
+}
+.mode-stop:hover { background: var(--track-bg); box-shadow: none; transform: none; border-color: var(--text); }
+.mode-stop:active { transform: translateY(1px); box-shadow: var(--bead-press); background: var(--track-bg); }
+/* 停用的按鈕不要立體——看得出來按不下去 */
+.btn:disabled { background: none; box-shadow: inset 0 1px 3px rgba(20,20,20,.08); transform: none; }
+
+/* 四組控制與下方右欄共用寬度。 */
+.topbar-actions { gap: 6px; }
+.header-tools { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.topbar-actions .seg { min-width: 0; height: var(--settings-row-height); padding: 4px; gap: 3px; }
+.header-tools .icon-btn { width: 44px; height: var(--settings-row-height); flex: 0 0 44px; }
+.topbar-actions .seg-btn { flex: 1 1 auto; align-self: stretch; white-space: nowrap; padding: 0 4px; }
+.speech-choice { flex: 1.5 1 132px; }
+#guide-word { font-weight: 700; }
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .topbar-actions { width: var(--sidebar-width); flex: 0 0 var(--sidebar-width); }
+}
+/* 手機：標題在左、四顆圓鈕在右，放得下就一行；
+   太窄（例如 360px 的 Android）放不下時，圓鈕自己換到第二行、仍然靠右，不會蓋到標題。 */
+@media (max-width: 640px) {
+  .topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .brand { gap: 6px; }
+  .brand h1 { font-size: .9375rem; white-space: nowrap; }
+  .topbar-actions { display: contents; }
+  .header-tools { margin-left: auto; }
+}
+
+/* 設定列加上兩張卡片合計與鏡頭同高；設定列占用的高度由卡片區扣除。 */
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .side { width: var(--sidebar-width); height: calc(var(--viewport-height, 100%) - var(--settings-row-height) - var(--settings-row-gap)); max-height: 100%; justify-self: end; align-self: center; display: grid; grid-template-rows: minmax(max-content, 1fr) minmax(150px, 3fr); }
+  .side > .guide, .side > .sentence { min-height: 0; }
+  .side > .guide { display: flex; flex-direction: column; justify-content: safe center; padding-block: 20px; }
+  .side > .guide .mode { margin-top: 12px; }
+  .side .sentence .strip { min-height: 0; }
+}
+
+
+/* ── 浮層裡的設定 ─────────────────────────────────
+   「聲音」「辨識到的詞」這兩組原本在頂列，一天用不到一次卻一直佔著畫面。
+   搬進「設定與說明」之後，主畫面的頂列從六顆按鈕變成兩顆圖示。 */
+.settings { display: flex; flex-direction: column; gap: 12px; margin: 0 0 18px; }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.setting-label { font-size: .9375rem; color: var(--text); font-weight: 600; }
+.settings .seg { flex: 0 0 auto; }
+@media (max-width: 460px) {
+  .setting { flex-direction: column; align-items: stretch; gap: 7px; }
+  .settings .seg { justify-content: stretch; }
+  .settings .seg-btn { flex: 1; }
+}
+
+/* 只剩一顆主按鈕的時候，凹槽跟著變成單格 */
+.mode.is-single { grid-template-columns: 1fr; }
+
+/* 喇叭圖示：開／關各一個 svg，用 class 切換，不用改 DOM */
+#auto-speech .ico-off { display: none; }
+#auto-speech.is-off .ico-on { display: none; }
+#auto-speech.is-off .ico-off { display: block; }
+#auto-speech.is-off { color: var(--muted); }
+
+/* 選詞卡裡的分隔線：上面是「看示範」，下面是「自己比」。 */
+.card-split { border: 0; border-top: 1px solid var(--glass-line); margin: 14px 0 12px; }
+.card .field-label { margin-bottom: 8px; }
+
+/* 「再看一次」：回到鏡頭後，選單回到「請選擇」，這顆記得剛剛看的是哪個詞。 */
+.guide-again { width: 100%; margin-top: 10px; }
+
+/* ── 立體感：第二輪 ─────────────────────────────────
+   原則跟按鈕一樣：光從上面來，陰影短而緊，不用大片模糊（那會變「假」）。
+   可以按的東西凸起來（珠子），裝東西的地方凹下去（凹槽），兩者一眼分得出來。 */
+
+/* 標誌：手放進一顆墨色圓珠，跟「開始辨識」同一種材質 */
+.brand-mark {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bead-ink); box-shadow: var(--bead-ink-shadow);
+  color: var(--ink-on);
+}
+.brand h1 { text-shadow: 0 1px 0 var(--hi); }
+@media (max-width: 640px) { .brand-mark { width: 30px; height: 30px; } .brand-mark svg { width: 18px; height: 18px; } }
+
+
+/* 選單是「可以按的」→ 凸起的淺色珠子（原本是平的灰底，看不出能按） */
+select {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%235F5F5F' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center, var(--bead);
+  box-shadow: var(--bead-shadow);
+}
+select:hover { filter: none; transform: translateY(-1px); box-shadow: var(--bead-shadow), 0 6px 10px rgba(20,20,20,.10); }
+select:active { transform: translateY(1px); box-shadow: var(--bead-press); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) select { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23C8C8C8' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center, var(--bead); }
+}
+:root[data-theme="dark"] select { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23C8C8C8' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center, var(--bead); }
+
+/* 句子框是「裝東西的」→ 凹下去的槽，跟按鈕底下那條溝同一種 */
+.strip { background: var(--track-bg); box-shadow: var(--track-shadow); }
+
+/* 分隔線刻進卡片裡：一道暗線＋下面一道亮線，像壓出來的溝 */
+.card-split { border-top: 1px solid rgba(20,20,20,.10); border-bottom: 1px solid var(--hi); }
+
+/* 卡片再浮起來一點——加的是短距離的層，不是大片模糊 */
+.card, .sentence {
+  box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(18,18,18,.10);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .card, :root:not([data-theme="light"]) .sentence { box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(0,0,0,.35); }
+  :root:not([data-theme="light"]) .card-split { border-top-color: rgba(0,0,0,.35); border-bottom-color: rgba(255,255,255,.06); }
+}
+:root[data-theme="dark"] .card, :root[data-theme="dark"] .sentence { box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(0,0,0,.35); }
+:root[data-theme="dark"] .card-split { border-top-color: rgba(0,0,0,.35); border-bottom-color: rgba(255,255,255,.06); }
+
+/* 三行字左緣對齊：「選一個詞，看怎麼比」、選單裡的「請選擇」、句子框裡的提示。
+   選單和句子框的字都往內縮了 14px（圓角框需要內距），所以標題也縮 14px，
+   三行的第一個字就落在同一條直線上。 */
+.card > .field-label { padding-left: 14px; }
+select { padding-left: 14px; }
+.strip { padding-left: 14px; padding-right: 14px; }
+
+/* 聲音圓鈕：顯示現在是誰的聲音 */
+#voice .ico-male { display: none; }
+#voice.is-male .ico-female { display: none; }
+#voice.is-male .ico-male { display: block; }
+/* 四顆圓鈕靠右，最右邊那顆對齊下面卡片的右緣 */
+.header-tools { margin-left: auto; }
+
+/* 鏡頭框的立體感：跟卡片、按鈕同一套「光從上面來」。
+   三件事：由上往下微微變暗的底色（厚度）、上緣一道很淡的亮邊、下方短而緊的外陰影（浮起來）。
+   亮邊與漸層寫在框自己身上（inset 陰影、背景），它們畫在影片<底下>——
+   鏡頭或教學影片一出來就被蓋掉，只在「未開啟」時看得到。
+   不在影片上面疊任何線，之前那樣會看起來像多了一圈框。 */
+.viewport {
+  background: linear-gradient(180deg, #1D1D1D 0%, #121212 55%, #0D0D0D 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.55),
+    0 1px 1px rgba(18,18,18,.16),
+    0 3px 6px rgba(18,18,18,.16),
+    0 10px 18px -6px rgba(18,18,18,.24);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .viewport {
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.10),
+      inset 0 -1px 0 rgba(0,0,0,.55),
+      0 1px 2px rgba(0,0,0,.45),
+      0 4px 8px rgba(0,0,0,.32),
+      0 12px 20px -6px rgba(0,0,0,.40);
+  }
+}
+:root[data-theme="dark"] .viewport {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.55),
+    0 1px 2px rgba(0,0,0,.45),
+    0 4px 8px rgba(0,0,0,.32),
+    0 12px 20px -6px rgba(0,0,0,.40);
+}
+
+/* 右欄是捲動容器（overflow: auto），會把裡面卡片的陰影在自己的邊界切掉——
+   而右欄的邊界剛好貼著卡片外緣，所以陰影被切成直角，圓角外面露出一塊方方的暗影，
+   看起來就「不自然」。其他東西（按鈕、鏡頭框）的陰影沒被框住，所以自然。
+   解法：右欄四周留一圈讓陰影淡出的空間（padding），再用同樣大小的負 margin 抵銷，
+   卡片的位置與寬度完全不變。app.js 對齊右欄時也扣掉這圈內距。
+   左右 12px 要小於手機的頁面邊距 14px，否則會多出橫向捲軸。 */
+.side {
+  --shadow-room-x: 12px; --shadow-room-top: 6px; --shadow-room-bottom: 22px;
+  padding: var(--shadow-room-top) var(--shadow-room-x) var(--shadow-room-bottom);
+  margin: calc(-1 * var(--shadow-room-top)) calc(-1 * var(--shadow-room-x)) calc(-1 * var(--shadow-room-bottom));
+}
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .side {
+    width: calc(var(--sidebar-width) + 2 * var(--shadow-room-x));
+    height: calc(var(--viewport-height, 100%) - var(--settings-row-height) - var(--settings-row-gap) + var(--shadow-room-top) + var(--shadow-room-bottom));
+    max-height: calc(100% + var(--shadow-room-top) + var(--shadow-room-bottom));
+  }
+}
+
+/* 畫面左上角的狀態：原本是 12px 灰字直接壓在畫面上，太不明顯。
+   改成一顆有底的膠囊——深色半透明底＋模糊，放在亮的影片上也讀得到；字改白、加粗。
+   前面的小圓點用形狀區分狀態（不靠顏色，維持黑白）：
+   空心圈＝未開啟、轉圈＝啟動中、實心會呼吸＝辨識中、實心灰＝已暫停、三角形＝示範。 */
+.stage-bar { inset: 12px 12px auto 12px; }
+.stage-state {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px 5px 9px; border-radius: 999px;
+  font-size: .8125rem; font-weight: 600; letter-spacing: .02em; line-height: 1.4;
+  color: #FFFFFF;
+  background: rgba(14,14,14,.66);
+  border: 1px solid rgba(255,255,255,.14);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 1px 2px rgba(0,0,0,.30), 0 3px 8px rgba(0,0,0,.18);
+}
+.stage-state::before {
+  content: ""; flex: 0 0 auto; box-sizing: border-box;
+  width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid #ADADAD;
+}
+.stage-state[data-state="starting"]::before { border-color: #FFFFFF; border-right-color: transparent; animation: stage-spin .8s linear infinite; }
+.stage-state[data-state="live"]::before { background: #FFFFFF; border-color: #FFFFFF; animation: stage-pulse 1.6s ease-out infinite; }
+.stage-state[data-state="paused"]::before { background: #ADADAD; border-color: #ADADAD; }
+.stage-state[data-state="guide"]::before {
+  width: 0; height: 0; border-radius: 0; border: 0;
+  border-left: 7px solid #FFFFFF; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent;
+}
+@keyframes stage-pulse { from { box-shadow: 0 0 0 0 rgba(255,255,255,.55); } to { box-shadow: 0 0 0 7px rgba(255,255,255,0); } }
+@keyframes stage-spin { to { transform: rotate(360deg); } }
+/* 錯誤訊息在標籤下面，標籤變高了，一起往下挪 */
+.status { top: 52px; max-height: calc(100% - 66px); }
+
+/* 手機直放：句子框往下長到螢幕底，不要只有一行高、下面空一大片。
+   版面分兩列：鏡頭一列（自己的高度）、右欄一列（拿剩下的全部），
+   句子卡再把右欄剩下的高度吃掉。句子很長時照樣往下長、整頁可以捲。
+   只限直放——橫放是兩欄，另有規則。 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .layout { grid-template-rows: auto minmax(0, 1fr); }
+  .side { min-height: 0; }
+  .side > .sentence { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .side > .sentence .strip { flex: 1 1 auto; min-height: 120px; max-height: none; align-content: flex-start; }
+}
+
+/* 手機直放：鏡頭框跟下面的卡片一樣寬。
+   原本高度上限是 min(42svh, 56vmin)。56vmin 的本意是「橫放時別讓鏡頭縮成一條線」，
+   但 min() 只會讓它更小、不會更大；而且直放時 vmin＝螢幕寬度，
+   56vmin 反而成了最緊的那道限制——375px 寬的手機，框被壓到 210px 高、280px 寬。
+   （橫放另有規則，會把這裡的 max-height 蓋掉，所以拿掉它不影響橫放。）
+   4:3 的畫面（未開啟、教學影片、多數電腦鏡頭）現在是滿寬。
+   iPhone 直拿時鏡頭給的是直的 3:4 串流，滿寬會高到 460px 以上、把句子擠出第一屏，
+   所以那種情況仍然以 42svh 為上限，寬度跟著比例縮。 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .viewport {
+    max-height: 42svh;
+    max-width: calc(42svh * var(--cam-ar, 1.3333));
+  }
+}
+/* 手機直放：底下留給陰影的空間不能超過頁面底部邊距（20px），否則整頁多出 2px 可以捲 */
+@media (max-width: 1100px) and (orientation: portrait) { .side { --shadow-room-bottom: 20px; } }
+
+/* 手機直放：句子多到超出框時，框<不長高>，在框裡面捲、自動捲到最新的詞。
+   原本整頁可以捲（body height:auto），格線的高度跟著內容走，minmax(0, 1fr) 等於沒限制——
+   詞一多，句子框一路往下長，最新的詞掉到螢幕外；要看就得往下捲，鏡頭又被捲走。
+   改成整頁固定一屏（跟電腦版、橫放一樣），右欄那一列的高度就是「剩下的空間」，
+   句子框填滿它、多的在框裡捲。app.js 的 renderSentence 本來就會捲到最後一個詞。
+   很矮的手機放不下選詞卡＋句子框時，右欄自己捲（.side 本來就是 overflow:auto）。 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  body { height: 100dvh; min-height: 0; overflow: hidden; }
+  .layout { flex: 1 1 auto; min-height: 0; }
+}
+
+/* 右欄的字統一一個大小（15px）。原本有 13／14／15 三種混在同一張卡片裡，看起來亂。
+   層級改由顏色與粗細區分：說明文字＝灰、一般粗細；可以按的東西＝半粗。 */
+.card > .field-label, #guide-word, #start-camera, #guide-again, .strip-empty { font-size: .9375rem; }
+#guide-word, #start-camera, #guide-again { font-weight: 600; }
+
+/* 平板直放（寬 600～1100px）：鏡頭框跟下面的卡片一樣寬。
+   手機的 42svh 上限在平板上太緊——768×1024 的 iPad 框只有 574px 寬、卡片卻有 740px。
+   平板直放高度很多，放寬到 56svh：iPad 的框變成滿寬（約 740×555），
+   句子框仍有 160px 以上（一次看得到三排詞）。 */
+@media (min-width: 600px) and (max-width: 1100px) and (orientation: portrait) {
+  .viewport {
+    max-height: 56svh;
+    max-width: calc(56svh * var(--cam-ar, 1.3333));
+  }
+}
+/* 矮一點的手機（iPhone SE 375×667）剩下的高度只夠一排詞。
+   句子框最低 120px 會撐出卡片外；降到 64px（一排詞＋上下內距）就放得下，
+   高的螢幕不受影響（它們本來就被 flex 撐得比這高）。 */
+@media (max-width: 1100px) and (orientation: portrait) { .side > .sentence .strip { min-height: 64px; } }
+/* 手機橫放同理：留給陰影的底部空間多了 2px，整頁會比螢幕高一點點 */
+@media (max-width: 900px) and (orientation: landscape) { .side { --shadow-room-bottom: 20px; } }
+
+/* ── 字的對齊：整張卡片都在中線上 ─────────────────────
+   按鈕（停止、再看一次）的字本來就置中；選單與句子框原本靠左，一半一半看起來亂。
+   按鈕的字不能靠左（會像跑版），所以反過來：全部置中。 */
+.picker { position: relative; }
+.picker select {
+  color: transparent;                 /* 選單自己的字藏起來，由上面那層顯示 */
+  padding-left: 40px; padding-right: 40px;
+}
+.picker select option, .picker select optgroup { color: var(--text); background: var(--surface); }
+.picker-text {
+  position: absolute; inset: 0 40px; z-index: 1; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9375rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* 09-26：預設字改成「25 個詞・選一個看示範」後，最窄的手機（360、320 直拿與手機橫拿）一行放不下：
+     放不下就在「・」後面折成兩行（選單高 44～46，兩行 15px 放得下，外框不變），不縮字級、不出現刪節號 */
+  white-space: normal; line-height: 1.2; text-align: center; word-break: keep-all; overflow-wrap: anywhere;
+}
+/* 句子框維持靠左：它是「寫句子」的地方，詞從左邊開始排才像一句話（作者確認過）。
+   置中的只有上面那張控制卡。 */
+
+/* ── 手機、平板直拿：鏡頭優先 ─────────────────────────
+   實機（iPhone、LINE 內建瀏覽器）上鏡頭框只有約 222×297：
+   iPhone 直拿時鏡頭給的是直的 3:4 畫面，框又被限制在螢幕高的 42%。
+   改成：控制列壓成一排、句子框固定約兩排高，剩下的高度<全部>給鏡頭。
+   做法跟電腦版一樣——frame-box 當尺寸容器，框用 cqh／cqw 算出貼合畫面比例的最大尺寸。 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .layout { grid-template-rows: minmax(0, 1fr) auto; }
+  .stage { min-height: 0; }
+  .frame-box {
+    container-type: size; display: flex; align-items: center; justify-content: center;
+    flex: 1 1 auto; min-height: 0;
+  }
+  .viewport {
+    height: min(100cqh, calc(100cqw / var(--cam-ar, 1.3333)));
+    width: auto; max-width: 100%; max-height: none; min-height: 0; margin-inline: 0;
+  }
+
+  /* 控制列：選單與主按鈕並排一排；「再看一次」出現時佔第二排 */
+  .side > .guide {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px; align-items: center;
+  }
+  .side > .guide > .picker { grid-column: 1; grid-row: 1; }
+  .side > .guide > .mode { grid-column: 2; grid-row: 1; margin-top: 0; min-width: 132px; }
+  .side > .guide > .card-split { display: none; }
+  .side > .guide > #guide-again { grid-column: 1 / -1; grid-row: 2; margin-top: 0; }
+
+  /* 句子框：固定約兩排高，多的在框裡捲（程式會自動捲到最新的詞） */
+  .side > .sentence { flex: none; }
+  .side > .sentence .strip { flex: none; min-height: 64px; max-height: 108px; }
+
+  /* 辨識卡片搬到框的上方：手通常在胸口，放在下面剛好把手蓋住。
+     卡片出現時左上角的「辨識中」先藏起來（卡片本身就在講狀態）。
+     字不截斷：狀態與詞放不下一行就換行，而不是變成「等…」「請讓雙手…」。 */
+  .live-badge { inset: 10px 10px auto 10px; }
+  .viewport:has(> #live-badge:not([hidden])) .stage-bar { visibility: hidden; }
+  .live-main { flex-wrap: wrap; row-gap: 4px; }
+  .live-state { flex: 0 0 auto; overflow: visible; }
+  .live-badge strong { font-size: 1.375rem; overflow: visible; text-overflow: clip;
+    white-space: normal; overflow-wrap: anywhere; }   /* 09-25：矮的直拿畫面（375×553）「比一個詞，比完手放下」原本被切掉；keep-all 在基本規則裡，會折在逗號後面 */
+  /* 錯誤訊息改到框的下方，才不會跟上面的卡片疊在一起 */
+  .status { top: auto; bottom: 10px; }
+}
+
+@media (max-width: 1100px) and (orientation: portrait) {
+  /* 框用不完的高度（app.js 算的 --stage-slack）交給句子框，框才會貼齊頂列、不浮在中間 */
+  .side > .sentence .strip {
+    min-height: calc(64px + var(--stage-slack, 0px));
+    max-height: calc(108px + var(--stage-slack, 0px));
+  }
+  /* 辨識卡片在上方時，沒有候選詞就不要預留那一排（空白會蓋住臉）。
+     卡片是疊在畫面上的，長高縮短不會推動任何東西，所以不需要預留來防跳動。 */
+  .live-alts { min-height: 0; }
+  .live-alts:empty { display: none; }
+}
+
+/* ── 辨識卡片：排成一排 ─────────────────────────────
+   原本是兩排：上排「狀態＋詞」、下排預留給「其他可能的詞」。沒有候選時下排是空的，
+   字擠在上半部、下半部空一條，看起來不整齊。
+   改成一排：狀態、詞、分數靠左並垂直置中；候選詞放同一排的右邊，沒有候選就不佔位。
+   候選的高度比詞小，出現或消失都不會讓卡片變高變矮，所以不用再預留空白。
+   窄的時候（手機）候選自動換到第二行。 */
+.live-badge { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 16px; row-gap: 6px; }
+.live-main { flex: 1 1 auto; min-width: 0; align-items: center; }
+.live-alts { flex-direction: row; gap: 6px; min-height: 0; margin-left: auto; flex: 0 1 auto; }
+.live-alts:empty { display: none; }
+.live-alts li { min-width: 5.5em; }
+@media (max-width: 900px), (max-width: 1100px) and (orientation: portrait) {
+  .live-alts { margin-left: 0; }
+}
+
+/* ── 固定版面：狀態改變只換字或變灰，不增減排數、不改變大小 ── */
+/* 按不了的圓鈕：淡掉、不浮起來，看得出「現在不能按」但位置一直都在 */
+.icon-btn:disabled { opacity: .38; cursor: default; transform: none; box-shadow: none; }
+.icon-btn:disabled:hover, .icon-btn:disabled:active { transform: none; box-shadow: none; }
+/* 手機、平板直拿：選單＋再看一次＋主按鈕同一排。主按鈕寬度固定，換字時旁邊不會伸縮 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .side > .guide { grid-template-columns: minmax(0, 1fr) auto; }
+  .side > .guide > .mode { grid-column: 2; grid-row: 1; margin-top: 0; min-width: 0; width: 100px; }
+  .side > .guide > .mode .btn { padding-inline: 8px; white-space: nowrap; }
+  .picker-text { inset: 0 34px 0 14px; }            /* 窄的時候字在箭頭左邊那塊置中 */
+}
+/* 電腦版：標題左緣對齊鏡頭框左緣（位移量由 app.js 算，跟框、右欄用同一套對齊） */
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .brand { transform: translateX(var(--brand-shift, 0px)); }
+}
+
+/* 電腦版：頂列＝標題與圓鈕同一排；下面＝鏡頭框與右欄，兩者頂端、底端對齊。
+   原本右欄比框矮一個「圓鈕列」、整欄往下推半格，現在圓鈕回到頂列，右欄就跟框一樣高。 */
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .side {
+    transform: translate(calc(-1 * var(--sidebar-shift, 0px)), 0);
+    height: calc(var(--viewport-height, 100%) + var(--shadow-room-top) + var(--shadow-room-bottom));
+  }
+}
+
+/* ── 兩張卡片固定大小（2026-09-24 作者確認的做法）─────────────
+   裡面的東西照舊會出現、消失（再看一次、全部唸出／清除），但卡片外框永遠不變：
+   選詞卡固定高度、內容垂直置中；句子卡吃掉右欄剩下的高度，句子框在卡片裡讓位。 */
+.guide-again { width: 100%; margin-top: 10px; }
+.sentence-actions[hidden] { display: none; }
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .side { grid-template-rows: auto minmax(0, 1fr); }
+  .side > .guide { height: var(--guide-card-h, 250px); justify-content: center; overflow: hidden; }
+  .side > .sentence { min-height: 0; display: flex; flex-direction: column; }
+  .side > .sentence .strip { flex: 1 1 auto; min-height: 0; max-height: none; }
+}
+/* 手機、平板直拿：選詞卡一排 [選單或「再看一次」｜主按鈕]，句子卡固定高度 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .side > .guide { grid-template-columns: minmax(0, 1fr) auto; }
+  .side > .guide > .picker, .side > .guide > #guide-again { grid-column: 1; grid-row: 1; margin-top: 0; }
+  .side > .guide.has-again > .picker { display: none; }
+  .side > .guide > .mode { grid-column: 2; grid-row: 1; margin-top: 0; min-width: 0; width: 100px; }
+  .side > .guide > #guide-again { min-height: 46px; }
+  .side > .sentence { height: calc(146px + var(--stage-slack, 0px)); display: flex; flex-direction: column; }
+  .side > .sentence .sentence-head { margin-bottom: 8px; }
+  .side > .sentence .sentence-head:has(.sentence-actions[hidden]) { display: none; }
+  .side > .sentence .strip { flex: 1 1 auto; min-height: 0; height: auto; max-height: none; }
+}
+/* 關於小視窗：一句話＋四個重點＋連結＋作者 */
+.sheet-lead { font-weight: 600; color: var(--text); }
+.sheet-points { margin: 0 0 12px; padding-left: 1.2em; }
+/* 每點盡量一行；非換行不可時避免最後一行只剩一兩個字（原本「喇叭」被拆成兩行） */
+.sheet-points li { margin-bottom: 4px; text-wrap: pretty; }
+/* 很窄的手機（320 寬）放不下一行時，在逗號、頓號後面換行，不要把「比下／一個」「喇／叭」拆開；
+   一段本身比一行還長時才在任意處換行（overflow-wrap），不會超出框 */
+.sheet-points li, .sheet-lead, .credit { word-break: keep-all; overflow-wrap: anywhere; }
+/* 置中對齊：連結有上下內距（加大點擊範圍），不置中的話中間的點會浮在字的上方 */
+.sheet-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sheet-links > span { color: var(--muted); }
+/* 發展方向那一句：跟上面三點分開一段，字色跟正文一樣，不加粗——是陳述，不是標語 */
+.sheet-goal { margin: 0 0 12px; word-break: keep-all; overflow-wrap: anywhere; }
+/* 只有「目標：」這個標籤粗、深色（跟第一句同一種粗細）；後面的句子維持正文的樣子，不跟第一句搶 */
+.sheet-goal strong { font-weight: 600; color: var(--text); }
+
+/* ── 右欄細修（2026-09-24）─────────────────────────
+   1. 「再看一次」是次要動作：不做成跟選單一樣的大白珠（原本分不出哪個是選單），
+      改成輕的文字鈕，前面一個重播符號。
+   2. 主按鈕只有一顆，不需要凹槽，也不需要上面那條分隔線——一顆黑珠就好。
+   3. 「全部唸出／清除」是兩個各自獨立的動作，不放進同一條凹槽
+      （凹槽裡一凸一平會被讀成「二選一的切換鈕」）；放在句子框下面：先看內容、再做動作。
+   4. 句子框的灰調淡一點，大面積時不沉重。 */
+.card-split { display: none; }
+.mode.is-single { background: none; box-shadow: none; padding: 0; margin-top: 12px; }
+.guide-again {
+  width: 100%; margin-top: 6px; min-height: 36px; font-size: .9375rem; font-weight: 600;
+  color: var(--text); background: none; box-shadow: none; gap: 6px;
+}
+.guide-again::before {
+  content: ""; width: 16px; height: 16px; flex: none; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.4-5.7'/%3E%3Cpath d='M4 4v4.5h4.5'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12a8 8 0 1 0 2.4-5.7'/%3E%3Cpath d='M4 4v4.5h4.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.guide-again:hover { background: var(--inset); transform: none; box-shadow: none; }
+.sentence-head { margin: 10px 0 0; }
+.sentence-actions { background: none; box-shadow: none; padding: 0; border-radius: 0;
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.sentence-actions .btn-quiet { padding-inline: 16px; }
+.strip { background: var(--inset); box-shadow: inset 0 1px 3px rgba(20,20,20,.10), inset 0 -1px 0 var(--hi); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .strip { box-shadow: inset 0 2px 4px rgba(0,0,0,.40), inset 0 -1px 0 rgba(255,255,255,.06); }
+}
+:root[data-theme="dark"] .strip { box-shadow: inset 0 2px 4px rgba(0,0,0,.40), inset 0 -1px 0 rgba(255,255,255,.06); }
+@media (min-width: 901px) and (orientation: landscape), (min-width: 1101px) {
+  .side > .guide { height: var(--guide-card-h, 196px); }
+}
+/* 手機：「再看一次」取代選單的位置時要看得出是一顆按鈕，所以在手機上仍是珠子 */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .side > .guide > #guide-again { background: var(--bead); box-shadow: var(--bead-shadow); margin-top: 0; }
+  .side > .guide > .mode { margin-top: 0; }
+  .side > .sentence .sentence-head { margin: 8px 0 0; }
+}
+
+
+/* ── 2026-09-24 全站檢查：主畫面修正 ───────────────────────── */
+/* 字級統一 15px（辨識卡片的大字與詞膠囊 18px 是例外）（第 24、36、87 條） */
+.brand h1, .placeholder-sub, .live-state, .live-alts li, .stage-state, .pill,
+.sheet-body, .sheet-head h2, .btn-sm, .status { font-size: .9375rem; }
+/* 辨識卡片：不顯示百分比；狀態小標籤沒字時整顆收起來（第 1、15 條） */
+.live-score:empty, .live-state:empty { display: none; }
+.live-alts .alt-score { display: none; }
+/* 辨識卡片出現時，左上角的狀態膠囊先藏起來——卡片本身就在講狀態（原本只在手機這樣做）（第 40 條） */
+.viewport:has(> #live-badge:not([hidden])) .stage-bar { visibility: hidden; }
+/* 有錯誤框時，框中央的入鏡提示先藏起來，同一個框裡只講一件事（第 23 條） */
+.viewport:has(> #status.is-error:not([hidden]):not(:empty)) > .placeholder { visibility: hidden; }
+/* 啟動中主按鈕不能變空白：保留墨色底、拿掉陰影（看得出按不了）（第 3 條） */
+.btn-primary:disabled { background: var(--bead-ink); color: var(--ink-on); box-shadow: none; opacity: .75; cursor: progress; }
+/* 示範畫面的「骨架」「0.5 倍速」是按鈕：做成深色珠子（鏡頭框永遠是深色，所以寫死、不跟主題），
+   點擊範圍撐到約 44 高，鍵盤焦點用白框（第 38、67、68 條） */
+.pill {
+  position: relative; min-height: 36px; padding: 6px 14px; color: #E6E6E6;
+  background: linear-gradient(180deg, rgba(64,64,64,.92), rgba(34,34,34,.92));
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.4);
+}
+.pill::before { content: ""; position: absolute; inset: -4px -2px; }
+.pill[aria-pressed="true"] { color: #161616; background: linear-gradient(180deg, #FFFFFF, #DCDCDC); }
+.guide-layer :focus-visible { outline-color: #FFFFFF; }
+.chip.is-playing :focus-visible { outline-color: currentColor; }
+/* 關於視窗：短而緊的陰影（第 82 條）；關閉鈕 44×44；連結加上下內距 */
+.sheet-card { box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(0,0,0,.18); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sheet-card { box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(0,0,0,.35); } }
+:root[data-theme="dark"] .sheet-card { box-shadow: var(--glass-shadow), 0 10px 16px -6px rgba(0,0,0,.35); }
+#about-close { width: 44px; height: 44px; }
+.sheet-links a { padding-block: 6px; }
+/* 選單跟主按鈕同樣是全圓膠囊（第 84 條） */
+#guide-word { border-radius: var(--r-pill); }
+/* 「再看「X」」不折行（第 21 條） */
+.guide-again { white-space: nowrap; }
+/* 手機直拿：鏡頭沒開時看到的是選單；鏡頭開著時「再看」才取代選單（第 56 條） */
+@media (max-width: 1100px) and (orientation: portrait) {
+  .side > .guide:not(.has-again) > #guide-again { display: none; }
+}
+@media (max-width: 340px) {
+  .side > .guide > .mode { width: 84px; }
+  #guide-again { padding-inline: 10px; }
+}
+/* 很窄的手機（320）：四顆圓鈕縮一點，頂列才放得下一排（第 61 條） */
+@media (max-width: 356px) {
+  .header-tools .icon-btn { width: 36px; height: 36px; flex-basis: 36px; }
+  .header-tools { gap: 4px; }
+}
+/* 手機橫放：兩張卡片固定大小、鏡頭框吃滿左欄高度並對齊標題（第 5、6 條） */
+@media (max-width: 900px) and (orientation: landscape) {
+  .layout { grid-template-columns: minmax(0, min(66%, calc((100dvh - var(--topbar-height, 64px) - 20px) * 1.3333))) minmax(200px, 1fr); }
+  .frame-box { container-type: size; display: flex; flex: 1 1 auto; min-height: 0; align-items: center; justify-content: flex-start; }
+  .viewport { height: min(100cqh, calc(100cqw / var(--cam-ar, 1.3333))); width: auto; max-width: 100%; max-height: none; margin-inline: 0; }
+  .side { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+  .side > .guide.has-again > .picker { display: none; }
+  .side > .guide > #guide-again { min-height: 46px; margin-top: 0; }
+  .side > .sentence { min-height: 0; display: flex; flex-direction: column; }
+  .side > .sentence .strip { flex: 1 1 auto; min-height: 0; max-height: none; }
+}
+/* 鏡頭框中央的圖示與提示放大（作者 2026-09-24：「放大一點」）。
+   這是畫面上最大的一塊、第一眼就看到的地方，字比介面其他地方大一級是刻意的例外。 */
+.placeholder { gap: 14px; }
+.placeholder svg { width: 84px; height: auto; }
+.placeholder-sub { font-size: 1.125rem; color: var(--caption-text); opacity: .86; }
+@media (max-width: 480px) { .placeholder svg { width: 68px; } .placeholder-sub { font-size: 1.0625rem; } }
+/* 左上角的狀態膠囊也放大一級（作者：「這也再大一點」）：字 16px、圓點 10px、內距加大 */
+.stage-state { font-size: 1rem; padding: 7px 14px 7px 11px; gap: 8px; }
+.stage-state::before { width: 10px; height: 10px; }
+.stage-state[data-state="guide"]::before { width: 0; height: 0; border-left-width: 8px; border-top-width: 5px; border-bottom-width: 5px; }
+.stage-bar { inset: 14px 14px auto 14px; }
+.status { top: 60px; }
+/* 辨識卡片上的狀態標籤（確認中、已辨識…）跟左上角的狀態膠囊是同一種東西：同樣大小、同樣底色與字色 */
+.live-state {
+  font-size: 1rem; font-weight: 600; line-height: 1.4; letter-spacing: .02em;
+  padding: 6px 13px; border-radius: 999px; white-space: nowrap;
+  color: #FFFFFF; background: rgba(14,14,14,.66);
+  border: 1px solid rgba(255,255,255,.14);
+}
+
+/* ══ 手機橫拿（2026-09-25）══════════════════════════════════════════
+   作者的 iPhone 橫拿用 Safari 開：扣掉網址列與分頁列，可用高度只剩約 300。
+   原本頂列（標誌＋四顆圓鈕）自己佔一整排約 64 高，鏡頭框只剩 288×216；
+   右欄兩張卡片卻有 420 寬，句子卡被壓成一條細縫——詞塊切一半、「全部唸出」掉到畫面外，
+   鏡頭框上的「讓頭、手與上半身入鏡」變成「讓頭、手與上半身入…」。
+   這一段改成：
+     一、頂列搬到右欄最上面。鏡頭框從頁面頂端開始、吃滿整個高度，寬度照鏡頭比例；
+         右欄太窄（放不下下面兩排）時，改成縮鏡頭框的寬度，右欄至少保留 304。
+     二、右欄由上到下：標誌與四顆圓鈕一排 → 選詞卡（選單或「再看」＋主按鈕，同一排）→ 句子卡。
+     三、句子框的高度剛好是「整數排詞塊」（每排 44、排距 8，至少一排），詞塊永遠不會被框邊切到；
+         用不完的零頭交給選詞卡（它的內容垂直置中，多幾像素看不出來）。
+     四、兩張卡片的外框只由螢幕大小決定：按鈕出現或消失、詞變多，外框都不動。
+     五、辨識卡片跟手機直拿一樣放到鏡頭框上方（手在胸口，放下面剛好蓋住手），
+         字可以換行、不用省略號；錯誤訊息改到框的下方。
+   範圍：橫拿而且高度不到 500——所有手機橫拿都在內；平板橫拿與電腦都比這高，不受影響。
+   瀏海與動態島：index.html 的 viewport 沒有寫 viewport-fit=cover，Safari 橫拿時
+   會自己把整頁放進安全區、兩側用背景色補滿，這時 env(safe-area-inset-*) 是 0。
+   下面的外距仍寫成 max(…, env(…))：哪天改成 cover，內容也不會跑進瀏海底下。
+   版面：body 變成兩欄兩列的格線——左欄（鏡頭）跨兩列、右欄上面是頂列、下面是兩張卡片。
+   頂列在 <main> 外面，所以 <main> 蓋滿整張格線、裡面再畫一張「一模一樣」的格線
+   （兩欄兩列都是用同一組變數算出的固定值，所以兩張格線的線完全重合）。
+   不用 subgrid：Safari 的 subgrid 在這裡會自己重算欄寬列高（實測右欄寬 350、下移 28），
+   也不用 display: contents：部分 Safari 會把 <main> 從報讀器的地標裡拿掉。 */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --land-pad-t: max(8px, env(safe-area-inset-top));
+    --land-pad-b: max(8px, env(safe-area-inset-bottom));
+    --land-pad-l: max(12px, env(safe-area-inset-left));
+    --land-pad-r: max(12px, env(safe-area-inset-right));
+    --land-gap: 12px;                  /* 鏡頭框與右欄之間 */
+    --land-side-min: 304px;            /* 右欄最窄：標誌＋四顆圓鈕、「再看「我們兩個」」＋主按鈕，各一排剛好放得下 */
+    --land-side-max: 380px;            /* 右欄最寬：再寬卡片就空了，多的寬度變成左右留白、整組置中 */
+    --land-h: calc(100dvh - var(--land-pad-t) - var(--land-pad-b));   /* 可用高度 */
+    /* 左欄（鏡頭）寬：可用高度 × 4/3（手機橫拿時鏡頭給的是 4:3），但要留 304 給右欄。
+       欄寬用固定的 4:3 算、不跟著當下的畫面比例變：萬一鏡頭給的是別的比例，
+       變的只有框在左欄裡的形狀，兩張卡片的大小與位置都不動。 */
+    --land-cam-w: min(calc(var(--land-h) * 4 / 3),
+                      calc(100vw - var(--land-pad-l) - var(--land-pad-r) - var(--land-gap) - var(--land-side-min)));
+    /* 右欄寬：剩下的寬度，介於 304～380 */
+    --land-side-w: clamp(var(--land-side-min),
+                         calc(100vw - var(--land-pad-l) - var(--land-pad-r) - var(--land-gap) - var(--land-cam-w)),
+                         var(--land-side-max));
+    --land-top-h: 38px;                /* 標誌與圓鈕那一排 */
+    --land-top-gap: 10px;              /* 那一排與下面卡片之間 */
+    /* 右上四顆圓鈕（09-25 下午）：右欄放得下就 44×44（手指按的建議大小），放不下維持 38。
+       一排要的寬度＝標誌 30＋間距 8＋標題 6 個字（15px、字距 .01em）＋間距 8＋四顆 44＋三個間距 4，約 325，再留 2 當餘裕。
+       「放得下就 44、否則 38」用算式切：差距乘 100 再夾在 38～44 之間，差 0.06 像素以上就整個跳到其中一邊。
+       放不下的是右欄只拿到 304～312 的尺寸（667×320、740×310、844×390）：鏡頭框照高度×4/3 取寬，剩給右欄的不夠。
+       只放大圓鈕，那一排的高度維持 38：圓鈕上下各多出 3 像素，落在頁面上緣留白（8）與下方間距（10）裡，
+       鏡頭框、兩張卡片的位置與大小完全不變——句子框的「整數排」也就不會因此少一排。 */
+    --land-icon-need: calc(30px + 8px + 6 * 1.01 * .9375rem + 8px + 4 * 44px + 3 * 4px + 2px);
+    --land-icon: clamp(38px, calc(44px + (var(--land-side-w) - var(--land-icon-need)) * 100), 44px);
+    --land-card-gap: 8px;              /* 兩張卡片之間 */
+    --land-row-h: 44px;                /* 選單、主按鈕、全部唸出、清除：一律 44 高（手指按得到的高度） */
+    --land-guide-min: calc(var(--land-row-h) + 22px);   /* 選詞卡最矮：一排＋上下內距 10＋框線 */
+    --land-chip-h: 44px;               /* 詞塊固定 44 高，一排的高度才算得準 */
+    --land-chip-gap: 8px;
+    /* 句子框上下的留白（8）。做成「框線」而不是內距：捲動框只會把內容切在內距外緣，
+       內距本身跟著內容捲——用內距的話，捲到最新一排時，上一排的底與陰影會從上緣那 8 像素露出來，
+       看起來就是一排被切掉的詞塊。框線不跟著捲，內容在框線的內緣就被切齊。 */
+    --land-strip-pad: 8px;
+    /* 句子卡裡「句子框以外」的高度：框線 2＋卡片上下內距 20＋按鈕上方間距 8＋按鈕 */
+    --land-sent-extra: calc(30px + var(--land-row-h));
+    /* 句子框最多拿得到的高度 */
+    --land-strip-max: calc(var(--land-h) - var(--land-top-h) - var(--land-top-gap)
+                           - var(--land-guide-min) - var(--land-card-gap) - var(--land-sent-extra));
+    /* 句子框實際高度＝上下框線＋整數排詞塊（排與排之間 8），至少一排。
+       round(down, 值, 一排的間距) 取「放得下的最多排」。 */
+    --land-strip-h: calc(max(var(--land-chip-h) + var(--land-chip-gap),
+                             round(down, var(--land-strip-max) - 2 * var(--land-strip-pad) + var(--land-chip-gap), var(--land-chip-h) + var(--land-chip-gap)))
+                         - var(--land-chip-gap) + 2 * var(--land-strip-pad));
+  }
+
+  /* ── 整頁：兩欄兩列，一屏、不捲動 ── */
+  body {
+    display: grid;
+    justify-content: center;
+    height: 100dvh; min-height: 0; overflow: hidden;
+    padding: var(--land-pad-t) var(--land-pad-r) var(--land-pad-b) var(--land-pad-l);
+  }
+  body, .layout {
+    grid-template-columns: var(--land-cam-w) var(--land-side-w);   /* 兩欄合起來比螢幕窄時，整組置中 */
+    grid-template-rows: var(--land-top-h) minmax(0, 1fr);
+    column-gap: var(--land-gap); row-gap: var(--land-top-gap);
+  }
+  .layout {
+    grid-column: 1 / -1; grid-row: 1 / -1;
+    display: grid; grid-template-areas: none;
+    width: auto; max-width: none; min-height: 0; margin: 0; padding: 0;
+  }
+
+  /* ── 頂列：右欄最上面一排，標誌靠左、四顆圓鈕靠右（左右緣跟下面的卡片對齊） ── */
+  .topbar {
+    grid-column: 2; grid-row: 1;
+    position: relative; z-index: 2;    /* <main> 的格線蓋過這一格，要浮在它上面才按得到 */
+    width: auto; max-width: none; min-width: 0; height: var(--land-top-h); margin: 0; padding: 0;
+    display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .brand { transform: none; gap: 8px; min-width: 0; }
+  .brand-mark { width: 30px; height: 30px; }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand h1 { font-size: .9375rem; white-space: nowrap; }
+  .topbar-actions { display: flex; width: auto; flex: 0 0 auto; transform: none; }
+  .header-tools { gap: 4px; margin-left: 0; }
+  .header-tools .icon-btn { width: var(--land-icon); height: var(--land-icon); flex: 0 0 var(--land-icon); }
+
+  /* ── 鏡頭框：從頂端到底端，寬度＝高度 × 鏡頭比例 ──
+     右欄放不下 304 時改由寬度決定（高度跟著比例縮）；框在左欄裡上下左右置中。
+     --cam-ar 由 app.js 的 applyFrameRatio() 寫在框上。 */
+  .stage {
+    grid-column: 1; grid-row: 1 / -1; min-width: 0; min-height: 0;
+    display: flex; flex-direction: column; justify-content: center; gap: 0;
+  }
+  .frame-box {
+    container-type: normal; display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto; min-height: 0;
+  }
+  .viewport {
+    flex: none; margin: 0; transform: none;
+    width: auto; min-width: 0; max-width: 100%; min-height: 0; max-height: none;
+    height: min(var(--land-h), calc(var(--land-cam-w) / var(--cam-ar, 1.3333)));
+  }
+
+  /* ── 右欄：選詞卡拿剩下的高度，句子卡是算好的整數排高度 ── */
+  .side {
+    grid-column: 2; grid-row: 2;
+    display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--land-card-gap);
+    width: auto; height: auto; max-height: none; min-width: 0; min-height: 0;
+    transform: none; justify-self: stretch; align-self: stretch;
+    /* 高度是算好的、一定放得下，所以不必當捲動容器；也就不會把卡片的陰影切成直角 */
+    padding: 0; margin: 0; overflow: visible;
+  }
+
+  /* 選詞卡：一排 [選單或「再看」｜主按鈕]，在卡片裡垂直置中 */
+  .side > .guide {
+    display: grid; grid-template-columns: minmax(0, 1fr) 100px; column-gap: 10px;
+    align-items: center; align-content: center;
+    height: auto; min-height: 0; padding: 10px 12px; overflow: visible;
+  }
+  .side > .guide > .picker, .side > .guide > #guide-again { grid-column: 1; grid-row: 1; margin: 0; }
+  .side > .guide > .mode { grid-column: 2; grid-row: 1; width: auto; min-width: 0; margin: 0; }
+  .side > .guide > .card-split { display: none; }
+  /* 跟手機直拿一樣：鏡頭開著、看過示範才用「再看」取代選單；鏡頭沒開時看到的是選單 */
+  .side > .guide:not(.has-again) > #guide-again { display: none; }
+  .side > .guide.has-again > .picker { display: none; }
+  .side > .guide > #guide-again {
+    min-height: var(--land-row-h); height: var(--land-row-h); padding: 0 10px;
+    background: var(--bead); box-shadow: var(--bead-shadow);   /* 取代選單時要看得出是一顆按鈕 */
+  }
+  #guide-word { height: var(--land-row-h); padding-block: 0; }
+  .picker-text { inset: 0 34px 0 14px; }                      /* 字在箭頭左邊那塊置中 */
+  .side > .guide > .mode .btn { min-height: var(--land-row-h); height: var(--land-row-h); padding: 0 8px; white-space: nowrap; }
+
+  /* 句子卡：固定高度＝整數排的句子框＋按鈕那一排。
+     沒有詞時按鈕那一排收起來，句子框在卡片裡長高補滿，卡片外框不變。 */
+  .side > .sentence {
+    display: flex; flex-direction: column; flex: none; min-height: 0;
+    padding: 10px 12px;
+    height: calc(var(--land-strip-h) + var(--land-sent-extra));     /* 不支援 round() 的見本段最後 */
+  }
+  .side > .sentence .strip {
+    flex: 1 1 auto; height: auto; min-height: 0; max-height: none;
+    padding-block: 0; border-block: var(--land-strip-pad) solid transparent;
+    gap: var(--land-chip-gap); align-content: flex-start;
+    /* 凹槽原本的內陰影畫在「內距外緣」，有了上下框線會往內縮 8 像素、變成一條線；
+       改用漸層從外框畫起（上緣一道暗、下緣一道亮），看起來跟原本一樣。深色的值在下面。 */
+    --land-shade-top: rgba(20,20,20,.10); --land-shade-len: 4px; --land-shade-bottom: var(--hi);
+    box-shadow: none;
+    background:
+      linear-gradient(var(--land-shade-top), transparent var(--land-shade-len)) border-box,
+      linear-gradient(to top, var(--land-shade-bottom) 1px, transparent 1px) border-box,
+      var(--inset);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .side > .sentence .strip { --land-shade-top: rgba(0,0,0,.40); --land-shade-len: 6px; --land-shade-bottom: rgba(255,255,255,.06); }
+  }
+  :root[data-theme="dark"] .side > .sentence .strip { --land-shade-top: rgba(0,0,0,.40); --land-shade-len: 6px; --land-shade-bottom: rgba(255,255,255,.06); }
+  .side > .sentence .strip .chip { height: var(--land-chip-h); min-height: var(--land-chip-h); }
+  /* 手指捲句子框，放開時停在整排上（09-25 下午）。框的可見高度是整數排，但捲動本身不會對齊：
+     驗收實測往回捲 18 像素停在 45，上下兩排各被切掉一截。每個詞塊的上緣都是停靠點；
+     程式自動捲到最新一排（app.js renderSentence 的 scrollTop = scrollHeight）停的位置
+     本來就是整數排，也剛好是停靠點，兩者一致。 */
+  .side > .sentence .strip { scroll-snap-type: y mandatory; }
+  .side > .sentence .strip .chip { scroll-snap-align: start; }
+  .side > .sentence .sentence-head { margin: 8px 0 0; }
+  .side > .sentence .sentence-head:has(.sentence-actions[hidden]) { display: none; }
+  .side > .sentence .sentence-actions .btn { min-height: var(--land-row-h); height: var(--land-row-h); padding-block: 0; }
+
+  /* ── 鏡頭框裡的字 ── */
+  .live-badge { inset: 10px 10px auto 10px; padding: 8px 12px; }
+  .live-main { flex-wrap: wrap; row-gap: 4px; }
+  .live-state { flex: 0 0 auto; overflow: visible; }
+  /* 字級同手機直拿（22px）；放不下就換行，不用省略號 */
+  .live-badge strong { font-size: 1.375rem; white-space: normal; overflow: visible; text-overflow: clip; }
+  .live-alts { margin-left: 0; }
+  .status { top: auto; bottom: 10px; }
+  /* 看示範時錯誤訊息改回上方：框的右下角是「骨架／0.5 倍速」，壓上去會蓋住而且按不到（09-25 驗收抓到） */
+  .viewport:has(> #guide-layer:not([hidden])) .status { top: 10px; bottom: auto; }
+}
+/* 不支援 round() 的瀏覽器（很舊的版本）：句子卡改用「拿得到的全部高度」，
+   詞塊可能被框邊切到一點，但版面不會壞 */
+@supports not (height: round(down, 10px, 3px)) {
+  @media (orientation: landscape) and (max-height: 500px) {
+    .side > .sentence { height: calc(var(--land-strip-max) + var(--land-sent-extra)); }
+  }
+}
+
+/* ── 09-25 傍晚：手機鏡頭開著時也能換示範的詞 ───────────────────────
+   作者：「手機版少了一個按鈕，就是換一個示範的按鈕」。原本手機（直拿與橫拿）鏡頭開著、看過示範後，
+   「再看「X」」會取代選單，想看別的詞只能先停止鏡頭。
+   改成一排三顆：［X ▾］選單（寫著目前的詞，點了換詞）［↻ 再看］［停止］。
+   選單已經寫著詞，「再看」就不重複寫詞（同一排不放兩次一樣的字）。
+   主按鈕維持原本的寬度與位置，這排出現前後不會跳。電腦與平板橫拿本來就是三排，不動。 */
+.picker-short { display: none; }
+@media (max-width: 1100px) and (orientation: portrait),
+       (orientation: landscape) and (max-height: 500px) {
+  .side > .guide.has-again { grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 10px; }
+  .side > .guide.has-again > .picker { display: block; grid-column: 1; grid-row: 1; margin: 0; min-width: 0; }
+  .side > .guide.has-again > #guide-again { grid-column: 2; grid-row: 1; width: auto; margin: 0; padding-inline: 14px; }
+  .side > .guide.has-again > .mode { grid-column: 3; grid-row: 1; width: 100px; }   /* 跟沒看過示範時同寬，按鈕不跳 */
+  .side > .guide.has-again .again-word { display: none; }
+  .side > .guide.has-again .picker-text { display: none; }
+  .side > .guide.has-again .picker select { padding-left: 10px; padding-right: 30px; }
+  .side > .guide.has-again .picker-short {
+    display: block; position: absolute; left: 10px; right: 30px; top: 50%; transform: translateY(-50%);
+    z-index: 1; pointer-events: none; text-align: center;
+    font-size: .9375rem; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;   /* 最窄的手機「我們兩個」會變「我們…」 */
+  }
+}
+@media (max-width: 340px) and (orientation: portrait) { .side > .guide.has-again > .mode { width: 84px; } }

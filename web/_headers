@@ -1,0 +1,11 @@
+# 不常改的大檔讓瀏覽器留久一點，再訪時不用每個檔都回伺服器確認（2026-09-24 全站檢查第 72 條）。
+# HTML、js、style.css、model、voices 維持預設（每次確認），改了就立刻生效。
+/vendor/*
+  Cache-Control: public, max-age=2592000
+# 授權全文沒有副檔名，預設會被當成 application/octet-stream、點了變下載（開源授權頁的「授權全文」連結）。
+# 只有這兩個檔，逐一寫完整路徑，不用萬用字元，比對規則最不會出錯。
+# 這兩條跟上面的 /vendor/* 會同時套用（快取一個月＋純文字），兩者設定的是不同標頭，不會互相蓋掉。
+/vendor/tfjs/LICENSE
+  Content-Type: text/plain; charset=utf-8
+/vendor/holistic/LICENSE
+  Content-Type: text/plain; charset=utf-8

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="用 AI 即時辨識臺灣手語，轉成文字並唸出來。目前支援 25 個常用詞，每個詞都有示範影片；免費、免安裝，鏡頭畫面不會上傳。">
+  <!-- 搜尋引擎與分享預覽。原本這裡是 noindex,nofollow（整站不給收錄），2026-09-24 決定開放。 -->
+  <link rel="canonical" href="https://taiwan-sign-language.pages.dev/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="臺灣手語辨識">
+  <meta property="og:title" content="臺灣手語辨識｜AI 手語轉文字與語音">
+  <meta property="og:description" content="用 AI 即時辨識臺灣手語，轉成文字並唸出來。目前支援 25 個常用詞，每個詞都有示範影片；免費、免安裝，鏡頭畫面不會上傳。">
+  <meta property="og:url" content="https://taiwan-sign-language.pages.dev/">
+  <meta property="og:image" content="https://taiwan-sign-language.pages.dev/og.png?v=4">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
+  <meta property="og:locale" content="zh_TW">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:image:alt" content="臺灣手語辨識的手形標誌">
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://taiwan-sign-language.pages.dev/#website",
+      "url": "https://taiwan-sign-language.pages.dev/",
+      "name": "臺灣手語辨識",
+      "alternateName": [
+        "台灣手語辨識",
+        "Taiwan Sign Language Recognition"
+      ],
+      "inLanguage": "zh-Hant-TW"
+    },
+    {
+      "@type": "WebApplication",
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"},
+      "@id": "https://taiwan-sign-language.pages.dev/#application",
+      "name": "臺灣手語辨識",
+      "url": "https://taiwan-sign-language.pages.dev/",
+      "inLanguage": "zh-Hant-TW",
+      "applicationCategory": "CommunicationApplication",
+      "operatingSystem": "Web browser",
+      "description": "用 AI 即時辨識臺灣手語，轉成文字並唸出來。目前支援 25 個常用詞，每個詞都有示範影片；免費、免安裝，鏡頭畫面不會上傳。",
+      "author": {
+        "@type": "Person",
+        "name": "林欣頤"
+      },
+      "isAccessibleForFree": true
+    }
+  ]
+}
+  </script>
+  <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self'; font-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>臺灣手語辨識｜AI 手語轉文字與語音</title>
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=white1">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=white1">
+  <link rel="stylesheet" href="style.css?v=0926b">
+  <script defer src="vendor/holistic/holistic.js"></script>
+  <script type="module" src="js/app.js?v=0929b"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 68 68" width="20" height="20" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 33V15a5 5 0 0 1 10 0v14V10a5 5 0 0 1 10 0v19V15a5 5 0 0 1 10 0v16l.7-7a4.5 4.5 0 0 1 9 1l-2.3 18C58 55 51 62 40 62c-9 0-15-4-20-11L8.5 36.4a5 5 0 0 1 7.6-6.5L22 33Z"/><path d="M22 33c7 .5 12 4.5 14 10"/></svg></span>
+    <h1>臺灣手語辨識</h1>
+    <!-- 作品定位（09-25）：第一次來的人一眼就該知道這是研究原型，不是成熟產品。只在電腦版顯示——
+         手機頂列放不下，而且會把鏡頭往下推；手機上這句話在「關於」視窗的第一行。 -->
+    <span class="brand-tag">AI 研究原型</span>
+  </div>
+  <div class="topbar-actions">
+    <div class="header-tools">
+    <!-- 聲音：一顆圓鈕，跟旁邊三顆同一種。圖示顯示「現在是誰的聲音」，按一下換另一個，
+         換完會唸一聲「起床」讓人馬上聽到差別。
+         符號自己畫（SVG），不用 ♀♂ 字元——那兩個字元在某些手機上會被換成彩色表情符號。 -->
+    <button id="voice" class="icon-btn" type="button" aria-label="聲音：女聲（按一下換男聲）" title="聲音：女聲（按一下換男聲）">
+      <svg class="ico-female" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="5.2"/><path d="M12 14.2V22M8.5 18.5h7"/></svg>
+      <svg class="ico-male" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="5.2"/><path d="M13.7 10.3 20 4M14.5 4H20v5.5"/></svg>
+    </button>
+    <!-- aria-haspopup="dialog" 而不是 aria-expanded：後者指的是「展開／收合同一塊內容」，
+         開啟對話框不是那件事。焦點的圈住由 app.js 用 inert 處理。 -->
+    <!-- 自動唸出做成一顆圖示，不是兩顆文字按鈕。
+         它跟「聲音」不一樣：聲音設定一次就不會再碰，
+         但「現在要不要出聲」是隨時會想改的（安靜的場合、現場示範時），
+         需要一按就到。一顆喇叭不用讀字就看得懂，成本幾乎是零。 -->
+    <button id="auto-speech" class="icon-btn" type="button" aria-pressed="true"
+            title="辨識到的詞自動唸出">
+      <svg class="ico-on" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>
+      <svg class="ico-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM17 9.5l4 5M21 9.5l-4 5"/></svg>
+      <span class="sr-only">辨識到的詞自動唸出</span>
+    </button>
+    <button id="theme" class="icon-btn" type="button" aria-pressed="false" title="切換淺色／深色">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <span class="sr-only">深色模式</span>
+    </button>
+    <button id="about" class="icon-btn" type="button" aria-haspopup="dialog" title="關於這個網站">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.4"/></svg>
+      <span class="sr-only">關於這個網站</span>
+    </button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ── 鏡頭 ─────────────────────────────────────── -->
+  <section class="stage" aria-labelledby="stage-title">
+    <h2 id="stage-title" class="sr-only">鏡頭與即時辨識</h2>
+
+    <!-- frame-box：讓框「跟畫面一樣寬」。
+         它拿走整個可用高度，框在裡面依畫面比例算出寬度並置中——
+         鏡頭 4:3、教學影片 16:9，切換時框跟著換形狀，兩邊都不留黑邊。
+         做法在 style.css 的 .frame-box / .viewport。 -->
+    <div class="frame-box">
+    <div class="viewport">
+      <div class="stage-bar">
+        <!-- 「我要比比看／看示範」原本是這裡的兩個分頁，現在是右欄選單下面的兩顆按鈕：
+             選詞、看示範、自己比，三個動作在同一個地方，畫面本身只負責顯示。 -->
+        <span id="stage-state" class="stage-state" data-state="off">未開啟</span>
+      </div>
+      <video id="camera" autoplay muted playsinline hidden></video>
+      <canvas id="overlay" width="640" height="480" aria-hidden="true" hidden></canvas>
+
+      <!-- 教學示範：自動循環、不顯示控制列。
+           用 <video muted loop> 而不是 GIF——同樣品質的 GIF 大 10 到 50 倍、
+           只有 256 色、不吃硬體解碼，25 個詞會讓網站多上百 MB。
+           骨架疊層畫在 guide-canvas 上。 -->
+      <div id="guide-layer" class="guide-layer" hidden>
+        <video id="guide-video" muted playsinline preload="metadata"
+               disablepictureinpicture></video>
+        <canvas id="guide-canvas" aria-hidden="true"></canvas>
+        <div class="guide-tools">
+          <button id="guide-skeleton" type="button" class="pill" aria-pressed="false">骨架</button>
+          <button id="guide-slow" type="button" class="pill" aria-pressed="false">0.5 倍速</button>
+        </div>
+        <p id="guide-empty" class="guide-empty" hidden>這個詞還沒有示範影片。</p>
+      </div>
+
+      <div id="camera-empty" class="placeholder">
+        <svg viewBox="0 0 64 48" width="58" height="44" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="8" width="38" height="32" rx="5"/><path d="m42 18 17-8v28l-17-8z"/></svg>
+                <p id="camera-hint" class="placeholder-sub">鏡頭跟臉一樣高，上半身和雙手<wbr>都入鏡</p>
+      </div>
+
+      <div id="live-badge" class="live-badge" hidden>
+        <div class="live-main">
+          <span id="live-state" class="live-state">觀察中</span>
+          <strong id="live-word">等你比手語</strong>
+          <span id="live-score" class="live-score"></span>
+        </div>
+        <!-- 第二、三名。模型不確定時，正確答案常常就在這裡；
+             只顯示第一名會讓使用者以為系統壞了，顯示三個候選才誠實。 -->
+        <ol id="live-alts" class="live-alts" aria-label="其他可能的詞"></ol>
+      </div>
+      <!-- 僅在畫面內顯示錯誤；一般狀態不再出現在鏡頭下方。 -->
+      <p id="status" class="status" hidden></p>
+    </div>
+    </div><!-- /frame-box -->
+
+
+  </section>
+
+
+  <!-- ── 句子 ─────────────────────────────────────── -->
+  <!-- ── 右欄：選詞 → 看示範／自己比 → 辨識出的句子 ───────────
+       使用者會做的三件事，由上到下排在同一欄。畫面（左邊那個框）只負責顯示。
+       原本這裡還有「先知道這件事」與「哪些詞好認」兩張卡，都拿掉了：
+       前者跟 ⓘ 的「限制」重複；後者的逐詞分級在統計上站不住
+       （單一種子一次抽樣、每詞 13～25 支考題），不該公開。 -->
+  <div class="side">
+
+  <section class="card guide" aria-label="選詞與模式">
+    <!-- 上面原本有一行標籤「選一個詞，看怎麼比」，跟選單裡的「請選擇」重複，合併成選單自己說：
+         沒選的時候寫「25 個詞・選一個看示範」（09-26：試用的人沒發現只認得 25 個詞，比了清單外的「謝謝」被判成早安，所以把詞數寫在這裡），選了寫「示範：多」。
+         原本需要標籤，是怕畫面上只剩一個裝著「多」的選單，沒人知道那是幹嘛的；
+         現在選單裡永遠帶著「示範」兩個字，也不會被誤以為是「指定要辨識的詞」。 -->
+    <!-- 選項依教材單元分組，由 app.js 從 guide.json 填。
+         不依「好不好認」分組：那個分級撐不住（見 app.js 的 fillGuideSelect 註解）。 -->
+    <!-- 選單的字要置中（整張卡的字都在中線上），但 Safari 不支援讓 <select> 的字置中。
+         所以選單自己的字設成透明，上面疊一層置中的文字；點下去點到的還是選單本身。 -->
+    <div class="picker">
+      <span id="guide-word-text" class="picker-text" aria-hidden="true">25 個詞・<wbr>選一個看示範</span>
+      <!-- 手機鏡頭開著、看過示範時，選單縮成一格，只顯示目前的詞（旁邊是「再看」「停止」），見 style.css 最後一段 -->
+      <span id="guide-word-short" class="picker-short" aria-hidden="true">換詞</span>
+      <select id="guide-word" aria-label="示範影片"><option value="" disabled selected>25 個詞・&#8203;選一個看示範</option></select>
+    </div>
+    <!-- 「再看一次「刷牙」」：看完示範回到鏡頭才出現（有字，一看就懂）。
+         卡片本身是固定高度，這顆出現或消失只在卡片裡面調整，卡片外框與下面的句子卡都不動。
+         手機上不另外多佔一排：它直接取代選單的位置，按下去回到示範、選單就回來。 -->
+    <button id="guide-again" type="button" class="btn btn-sm guide-again" hidden></button>
+    <!-- 「看示範」那顆拿掉了：選一個詞就直接播它的示範。
+         選單是要伸手去點的，不可能在比手語的時候誤觸，
+         所以「選了詞」本來就等於「我想看這個詞怎麼比」——不需要再按第二下。
+         看完要回去比，按下面那顆（它會寫「回到鏡頭」）。 -->
+    <!-- 分隔線：上面是「看示範」，下面是「自己比」，是兩件事。
+         沒有這條線的話，按鈕會被讀成「選完詞之後要按這顆才開始」。 -->
+    <hr class="card-split">
+    <div class="mode is-single">
+      <button id="start-camera" type="button" class="btn btn-primary">開始辨識</button>
+    </div>
+    <!-- 「暫停」與「關閉鏡頭」兩顆都拿掉了，合併成上面那顆主按鈕的「停止」。
+         理由：停止之後句子還留著、再按一下就重開（權限已給，不到一秒），
+         所以「暫停但鏡頭開著」這個狀態沒有存在的必要，
+         而它卻讓主畫面多了兩顆按鈕、還要使用者分辨兩者的差別。 -->
+  </section>
+
+  <!-- 辨識出的句子 -->
+  <section class="sentence" aria-labelledby="sentence-title">
+    <h2 id="sentence-title" class="sr-only">辨識內容</h2>
+    <div id="sentence-strip" class="strip" tabindex="-1">
+      <p class="strip-empty">辨識結果會顯示在這裡</p>
+    </div>
+    <!-- 有詞才出現「全部唸出／清除」，放在句子框<下面>（先看內容、再做動作）。
+         兩顆是各自獨立的動作，不放在同一條凹槽裡——凹槽裡一凸一平會被讀成「二選一的切換鈕」。
+         卡片本身固定高度，這排出現時只是句子框在卡片裡讓出位置。 -->
+    <div class="sentence-head">
+      <div class="sentence-actions" hidden>
+        <button id="speak-sentence" type="button" class="btn" disabled>全部唸出
+        </button>
+        <button id="clear-sentence" type="button" class="btn btn-quiet" disabled>清除</button>
+      </div>
+    </div>
+
+  </section>
+
+  </div>
+
+</main>
+
+<div id="about-sheet" class="sheet" role="dialog" aria-modal="true"
+     aria-labelledby="about-title" hidden>
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h2 id="about-title">關於這個網站</h2>
+      <button id="about-close" type="button" class="icon-btn" aria-label="關閉">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <!-- 2026-09-25 第二版（作者貼來的建議，逐條判斷後採用大部分）：
+           · 拿掉「按右上角的喇叭」：那是操作提示，不是「關於」；改寫進 /about/ 第 2 步。
+           · 加一句發展方向：只看這個視窗，會以為「25 個詞」就是作品的終點。
+           · 限制改成正式的講法「尚未支援連續手語與完整句子翻譯」。
+           · 導言用「AI」點出作品核心；「25 個詞」只在第一點講一次（同一個視窗不講兩次）。
+           · 連結維持「使用說明」，不照建議改成「完整說明」——全站頁尾都叫「使用說明」，名稱要一致。
+           · 學校加回來，寫「畢業」：作者已經畢業，只寫學校會被讀成在學。
+           · 來源那行維持「影片為作者自錄」：首頁的示範播放器播的是作者自己錄的影片，不撇清會被當成教材影片被重製。
+           · 教材網做成連結（09-25 作者提出）：其他頁的來源都有連結，只有這裡沒有；另開分頁，不會把人帶離辨識畫面。 -->
+      <p class="sheet-lead">這是 AI 研究原型：對著鏡頭比臺灣手語，即時辨識成文字並唸出來。</p>
+      <ul class="sheet-points">
+        <li>目前支援 25 個常用詞，一次辨識一個詞。</li>
+        <li>尚未支援連續手語<wbr>與完整句子翻譯，辨識結果可能有誤。</li>
+        <li>鏡頭畫面只在你的瀏覽器裡<wbr>處理，不會上傳。</li>
+      </ul>
+      <p class="sheet-goal"><strong>目標：</strong>從單詞辨識<wbr>走向即時臺灣手語翻譯。</p>
+      <p class="sheet-links"><a href="/about/">使用說明</a><span aria-hidden="true">・</span><a href="https://taiwan-sign-language.pages.dev/w/">詞彙示範</a><span aria-hidden="true">・</span><a href="/licenses/">開源授權</a></p>
+      <p class="credit">林欣頤<br>中原大學<wbr>智慧運算與大數據學士班畢業<br>詞彙取自<a href="https://jung-hsingchang.tw/twsl/movies-uni1.html" target="_blank" rel="noopener noreferrer">臺灣手語教材資源網</a>；影片為作者自錄。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 螢幕報讀專用：只播報「這次多了哪個詞」，不要每次都把整句重念。 -->
+<p id="sr-announce" class="sr-only" aria-live="polite" role="status"></p>
+
+<noscript><p class="noscript">請啟用 JavaScript 才能使用辨識功能，或先閱讀<a href="/about/">使用說明</a>。</p></noscript>
+</body>
+</html>

@@ -1,0 +1,8 @@
+// Cloudflare Pages 設定（選用，只有要用 functions/ 的整句語音或部署時才需要）。
+// 本機測試：npx wrangler pages dev　　部署：npx wrangler pages deploy
+// name 改成你自己的 Pages 專案名稱。
+{
+  "name": "your-project-name",
+  "pages_build_output_dir": "./web",
+  "compatibility_date": "2026-09-21"
+}

@@ -1,0 +1,227 @@
+[
+  {
+    "id": 0,
+    "label": "一起",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "一起",
+    "seconds": 61,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=61"
+  },
+  {
+    "id": 1,
+    "label": "他",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "他",
+    "seconds": 153,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=153"
+  },
+  {
+    "id": 2,
+    "label": "你",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "你",
+    "seconds": 146,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=146"
+  },
+  {
+    "id": 3,
+    "label": "你們",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "你們",
+    "seconds": 141,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=141"
+  },
+  {
+    "id": 4,
+    "label": "刷牙",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "刷牙",
+    "seconds": 67,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=67"
+  },
+  {
+    "id": 5,
+    "label": "去",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "去",
+    "seconds": 134,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=134"
+  },
+  {
+    "id": 6,
+    "label": "同學",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "同學",
+    "seconds": 73,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=73"
+  },
+  {
+    "id": 7,
+    "label": "多",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "多",
+    "seconds": 139,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=139"
+  },
+  {
+    "id": 8,
+    "label": "好",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "好",
+    "seconds": 58,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=58"
+  },
+  {
+    "id": 9,
+    "label": "學",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "學",
+    "seconds": 125,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=125"
+  },
+  {
+    "id": 10,
+    "label": "我",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "我",
+    "seconds": 159,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=159"
+  },
+  {
+    "id": 11,
+    "label": "我們兩個",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "我們兩個",
+    "seconds": 124,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=124"
+  },
+  {
+    "id": 12,
+    "label": "早安",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "早安",
+    "seconds": 51,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=51"
+  },
+  {
+    "id": 13,
+    "label": "朋友",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "朋友",
+    "seconds": 46,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=46"
+  },
+  {
+    "id": 14,
+    "label": "洗臉",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "洗臉",
+    "seconds": 81,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=81"
+  },
+  {
+    "id": 15,
+    "label": "玩",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "玩",
+    "seconds": 76,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=76"
+  },
+  {
+    "id": 16,
+    "label": "畫畫",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "畫畫",
+    "seconds": 94,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=94"
+  },
+  {
+    "id": 17,
+    "label": "穿衣服",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "穿衣服",
+    "seconds": 95,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=95"
+  },
+  {
+    "id": 18,
+    "label": "老師",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "老師",
+    "seconds": 42,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=42"
+  },
+  {
+    "id": 19,
+    "label": "聊天",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "聊天",
+    "seconds": 91,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=91"
+  },
+  {
+    "id": 20,
+    "label": "讀書",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "讀書",
+    "seconds": 122,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=122"
+  },
+  {
+    "id": 21,
+    "label": "起床",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "起床",
+    "seconds": 37,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=37"
+  },
+  {
+    "id": 22,
+    "label": "跑步",
+    "unit": 3,
+    "unitTitle": "我的朋友",
+    "sourceLabel": "跑步、跑",
+    "seconds": 109,
+    "url": "https://drive.google.com/file/d/13-4YRHyM9aO9pOBPyd1zPzHaYnzht_vp/view?t=109"
+  },
+  {
+    "id": 23,
+    "label": "運動",
+    "unit": 2,
+    "unitTitle": "老師好！",
+    "sourceLabel": "運動",
+    "seconds": 110,
+    "url": "https://drive.google.com/file/d/11E53jtWH8P5CcA3u4Yq3VTpyBpX_VIqd/view?t=110"
+  },
+  {
+    "id": 24,
+    "label": "開心",
+    "unit": 1,
+    "unitTitle": "起床囉！",
+    "sourceLabel": "開心",
+    "seconds": 109,
+    "url": "https://drive.google.com/file/d/18ImxksDnki7s_ZG62NpEp5TDBSEFBCgQ/view?t=109"
+  }
+]
